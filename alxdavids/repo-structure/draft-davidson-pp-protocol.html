@@ -1,0 +1,2579 @@
+<!DOCTYPE html>
+<html lang="en" class="Internet-Draft">
+<head>
+<meta charset="utf-8">
+<meta content="Common,Latin" name="scripts">
+<meta content="initial-scale=1.0" name="viewport">
+<title>Privacy Pass: The Protocol</title>
+<meta content="Alex Davidson" name="author">
+<meta content="
+       This document specifies the Privacy Pass protocol for privacy-preserving
+authorization of clients to servers. The privacy requirement is that
+client re-authorization events cannot be linked to any previous initial
+authorization. Privacy Pass is intended to be used as a performant
+protocol in the Internet setting. 
+    " name="description">
+<meta content="xml2rfc 2.39.0" name="generator">
+<meta content="Internet-Draft" name="keyword">
+<meta content="draft-davidson-pp-protocol-latest" name="ietf.draft">
+<link href="draft-davidson-pp-protocol.xml" rel="alternate" type="application/rfc+xml">
+<link href="#copyright" rel="license">
+<style type="text/css">@import url('https://martinthomson.github.io/i-d-template/fonts.css');
+
+html {
+  --background-color: #fff;
+  --text-color: #222;
+  --title-color: #191919;
+  --link-color: #2a6496;
+  --highlight-color: #f9f9f9;
+  --line-color: #eee;
+  --small-font-size: 14.5px;
+}
+body {
+  max-width: 624px;
+  margin: 75px auto;
+  padding: 0 5px;
+  color: var(--text-color);
+  background-color: var(--background-color);
+  font: 16px/22px "Lora", serif;
+  scroll-behavior: smooth;
+}
+
+.ears {
+  display: none;
+}
+
+/* headings */
+#title, h1, h2, h3, h4, h5, h6 {
+  font-family: "Cabin Condensed", sans-serif;
+  font-weight: 600;
+  margin: 0.8em 0 0.3em;
+  font-size-adjust: 0.5;
+  color: var(--title-color);
+}
+#title {
+  padding: 1em 0 0.2em;
+  font-size: 32px;
+  line-height: 40px;
+  clear: both;
+}
+h1, h2, h3 {
+  font-size: 22px;
+  line-height: 26px;
+}
+h4, h5, h6 {
+  font-size: 18px;
+  line-height: 22px;
+}
+
+/* general structure */
+.author {
+  padding-bottom: 0.3em;
+}
+#abstract+p, #abstract+p code, #abstract+p samp, #abstract+p tt {
+  font-size: 18px;
+  line-height: 24px;
+}
+p {
+  padding: 0;
+  margin: 0.5em 0;
+  text-align: left;
+}
+div, span {
+  position: relative;
+}
+div {
+  margin: 0;
+}
+.alignRight.art-text {
+  background-color: var(--highlight-color);
+  border: 1px solid var(--line-color);
+  border-radius: 3px;
+  padding: 0.5em 1em 0;
+  margin-bottom: 0.5em;
+}
+.alignRight.art-text pre {
+  padding: 0;
+  width: auto;
+}
+.alignRight {
+  margin: 1em 0;
+}
+.alignRight > *:first-child {
+  border: none;
+  margin: 0;
+  float: right;
+  clear: both;
+}
+.alignRight > *:nth-child(2) {
+  clear: both;
+  display: block;
+  border: none;
+}
+svg {
+  display: block;
+}
+.alignCenter.art-text {
+  background-color: var(--highlight-color);
+  border: 1px solid var(--line-color);
+  border-radius: 3px;
+  padding: 0.5em 1em 0;
+  margin-bottom: 0.5em;
+}
+.alignCenter.art-text pre {
+  padding: 0;
+  width: auto;
+}
+.alignCenter {
+  margin: 1em 0;
+}
+.alignCenter > *:first-child {
+  border: none;
+  /* this isn't optimal, but it's an existence proof.  PrinceXML doesn't
+     support flexbox yet.
+  */
+  display: table;
+  margin: 0 auto;
+}
+
+/* lists */
+ol, ul {
+  padding: 0;
+  margin: 0 0 1em 2em;
+}
+ol ol, ul ul, ol ul, ul ol {
+  margin-left: 1em;
+}
+li {
+  margin: 0 0 0.25em 0;
+}
+.ulCompact li {
+  margin: 0;
+}
+ul.empty, .ulEmpty {
+  list-style-type: none;
+}
+ul.empty li, .ulEmpty li {
+  margin-top: 0.5em;
+}
+ul.compact, .ulCompact,
+ol.compact, .olCompact {
+  line-height: 100%;
+  margin: 0 0 0 2em;
+}
+
+/* definition lists */
+dl {
+}
+dl > dt {
+  float: left;
+  margin-right: 1em;
+}
+dl > dd {
+  margin-bottom: .8em;
+  min-height: 1.3em;
+}
+dl.compact > dd, .dlCompact > dd {
+  margin-bottom: 0em;
+}
+dl > dd > dl {
+  margin-top: 0.5em;
+  margin-bottom: 0em;
+}
+
+/* links */
+a, a[href].selfRef:hover {
+  text-decoration: none;
+}
+a[href].selfRef {
+  color: var(--text-color);
+}
+a[href] {
+  color: var(--link-color);
+}
+a[href]:hover {
+  text-decoration: underline;
+}
+a[href].selfRef:hover {
+  background-color: var(--highlight-color);
+}
+a.xref {
+  white-space: nowrap;
+}
+
+/* Figures */
+tt, code, pre {
+  background-color: var(--highlight-color);
+  font: 14px/22px 'Oxygen Mono', monospace;
+}
+pre {
+  border: 1px solid var(--line-color);
+  line-height: 17px;
+  margin: 5px;
+  padding: 5px;
+}
+img {
+  max-width: 100%;
+}
+figure {
+  margin: 0.5em 0;
+}
+figure blockquote {
+  margin: 0.8em 0.4em 0.4em;
+}
+figcaption, caption {
+  font-style: italic;
+  margin: 0.5em 1.5em;
+  text-align: left;
+}
+@media screen {
+  pre {
+    display: inline-block;
+    overflow-x: auto;
+    max-width: 100%;
+    width: calc(100% - 22px - 1em);
+  }
+  figure pre {
+    display: block;
+    width: calc(100% - 25px);
+  }
+  pre + .pilcrow {
+    display: inline-block;
+    vertical-align: text-bottom;
+    padding-bottom: 8px;
+  }
+  table {
+    display: inline-block;
+    overflow-x: auto;
+  }
+}
+
+/* aside, blockquote */
+aside, blockquote {
+  margin-left: 0;
+  padding: 0 2em;
+  font-style: italic;
+}
+blockquote {
+  background-color: var(--highlight-color);
+  border: 1px solid var(--line-color);
+  border-radius: 3px;
+  margin: 1em 0;
+}
+cite {
+  display: block;
+  text-align: right;
+  font-style: italic;
+}
+
+/* tables */
+table {
+  width: 100%;
+  margin: 0 0 1em;
+  border-collapse: collapse;
+  border: 1px solid var(--line-color);
+}
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.5em 0.75em;
+}
+th {
+  text-align: left;
+  background-color: #eee;
+}
+tr:nth-child(2n) > td {
+  background-color: var(--background-color);
+}
+tr:nth-child(2n+1) > td {
+  background-color: var(--highlight-color);
+}
+thead+tbody tr:nth-child(2n) > td {
+  background-color: var(--highlight-color);
+}
+thead+tbody tr:nth-child(2n+1) > td {
+  background-color: var(--background-color);
+}
+table caption {
+  font-style: italic;
+  margin: 0.3em 0;
+  padding: 0;
+  text-align: left;
+}
+table p {
+  /* XXX to avoid bottom margin on table row signifiers. If paragraphs should
+     be allowed within tables more generally, it would be far better to select on a class. */
+  margin: 0;
+}
+
+/* pilcrow */
+a.pilcrow {
+  margin-left: 3px;
+  visibility: hidden;
+  user-select: none;
+}
+a.pilcrow[href] { color: #ddd; }
+a.pilcrow[href]:hover { text-decoration: none; }
+@media screen {
+  :hover > a.pilcrow {
+    visibility: visible;
+  }
+  a.pilcrow:hover {
+    background-color: transparent;
+  }
+}
+
+/* misc */
+hr {
+  border: 0;
+  border-top: 1px solid var(--line-color);
+}
+.bcp14 {
+  font-variant: small-caps;
+}
+
+.role {
+  font-variant: all-small-caps;
+}
+
+/* info block */
+#identifiers {
+  margin: 0;
+  font-size: var(--small-font-size);
+  line-height: 18px;
+  --identifier-width: 8em;
+}
+#identifiers dt {
+  width: var(--identifier-width);
+  margin: 0;
+  clear: left;
+  float: left;
+  text-align: right;
+}
+#identifiers dd {
+  margin: 0 0 0 calc(1em + var(--identifier-width));
+  min-width: 5em;
+}
+#identifiers .authors .author {
+  display: inline-block;
+  margin-right: 1.5em;
+}
+#identifiers .authors .org {
+  font-style: italic;
+}
+
+/* The prepared/rendered info at the very bottom of the page */
+.docInfo {
+  color: #999;
+  font-size: 0.9em;
+  font-style: italic;
+  margin-top: 2em;
+}
+.docInfo .prepared {
+  float: left;
+}
+.docInfo .prepared {
+  float: right;
+}
+
+/* table of contents */
+#toc {
+  padding: 0.75em 0 2em 0;
+  margin-bottom: 1em;
+}
+#toc nav ul {
+  margin: 0 0.5em 0 0;
+  padding: 0;
+  list-style: none;
+}
+#toc nav li {
+  line-height: 1.3em;
+  margin: 0.75em 0;
+  padding-left: 1.2em;
+  text-indent: -1.2em;
+}
+#toc a.xref {
+  white-space: normal;
+}
+/* references */
+.references dt {
+  text-align: right;
+  font-weight: bold;
+  min-width: 7em;
+}
+.references dd {
+  margin-left: 8em;
+  overflow: auto;
+}
+
+.refInstance {
+  margin-bottom: 1.25em;
+}
+
+.references .ascii {
+  margin-bottom: 0.25em;
+}
+
+/* index */
+.index ul {
+  margin: 0 0 0 1em;
+  padding: 0;
+  list-style: none;
+}
+.index ul ul {
+  margin: 0;
+}
+.index li {
+  margin: 0;
+  text-indent: -2em;
+  padding-left: 2em;
+  padding-bottom: 5px;
+}
+.indexIndex {
+  margin: 0.5em 0 1em;
+}
+.index a {
+  font-weight: 700;
+}
+/* make the index two-column on all but the smallest screens */
+@media (min-width: 600px) {
+  .index ul {
+    column-count: 2;
+    column-gap: 20px;
+  }
+  .index ul ul {
+    column-count: 1;
+    column-gap: 0;
+  }
+}
+
+/* authors */
+address.vcard {
+  font-style: normal;
+  margin: 1em 0;
+}
+address.vcard .nameRole {
+  font-weight: 700;
+  margin-left: 0;
+}
+address.vcard .label {
+  margin: 0.5em 0;
+}
+address.vcard .type {
+  display: none;
+}
+.alternative-contact {
+  margin: 1.5em 0 1em;
+}
+hr.addr {
+  border-top: 1px dashed;
+  margin: 0;
+  color: #ddd;
+  max-width: calc(100% - 16px);
+}
+@media (min-width: 600px) {
+  #authors-addresses > section {
+    display: relative;
+    padding: 32px 0 0;
+    column-count: 2;
+    column-gap: 20px;
+  }
+  #name-authors-addresses {
+    position: absolute;
+    top: 0px;
+    column-span: all;
+  }
+  /* hack for break-inside: avoid-column */
+  #authors-addresses address {
+    display: inline-block;
+    break-inside: avoid-column;
+  }
+}
+
+/* temporary notes */
+.rfcEditorRemove::before {
+  position: absolute;
+  top: 0.2em;
+  right: 0.2em;
+  padding: 0.2em;
+  content: "The RFC Editor will remove this note";
+  color: #b76427;
+  background-color: rgba(249, 232, 105, 0.3);
+}
+.rfcEditorRemove {
+  position: relative;
+  padding-top: 1.8em;
+  background-color: rgba(249, 232, 105, 0.3);
+  border-radius: 3px;
+}
+.cref {
+  background-color: rgba(249, 232, 105, 0.3);
+  padding: 2px 4px;
+}
+.crefSource {
+  font-style: italic;
+}
+/* alternative layout for smaller screens */
+@media screen and (max-width: 953px) {
+  #toc {
+    position: fixed;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    padding: 0;
+    margin: 0;
+    border-bottom: 1px solid #ccc;
+    opacity: 0.6;
+  }
+  #toc.active {
+      opacity: 1;
+  }
+  #toc h2 {
+    margin: 0;
+    padding: 2px 0 2px 6px;
+    padding-right: 1em;
+    font-size: 18px;
+    line-height: 24px;
+    min-width: 190px;
+    text-align: right;
+    background-color: #444;
+    color: white;
+    cursor: pointer;
+  }
+  #toc h2::before { /* css hamburger */
+    float: right;
+    position: relative;
+    width: 1em;
+    height: 1px;
+    left: -164px;
+    margin: 8px 0 0 0;
+    background: white none repeat scroll 0 0;
+    box-shadow: 0 4px 0 0 white, 0 8px 0 0 white;
+    content: "";
+  }
+  #toc nav {
+    display: none;
+    background-color: var(--background-color);
+    padding: 0.5em 1em 1em;
+    overflow: auto;
+    overscroll-behavior: contain;
+    height: calc(100vh - 48px);
+    border-left: 1px solid #ddd;
+  }
+  #toc.active nav {
+    display: block;
+  }
+  /* Make the collapsed ToC header render white on gray also when it's a link */
+  #toc h2 a,
+  #toc h2 a:link,
+  #toc h2 a:focus,
+  #toc h2 a:hover,
+  #toc a.toplink,
+  #toc a.toplink:hover {
+    color: white;
+    background-color: #444;
+    text-decoration: none;
+  }
+  #toc a.toplink {
+    margin-top: 2px;
+  }
+}
+
+/* alternative layout for wide screens */
+@media screen and (min-width: 954px) {
+  body {
+    padding-right: 380px;
+  }
+  #toc {
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    right: calc(50vw - 480px);
+    width: 312px;
+    margin: 0;
+    padding: 0;
+    z-index: 1;
+  }
+  #toc h2 {
+    margin: 0;
+    padding: 0.25em 1em 1em 0;
+  }
+  #toc nav {
+    display: block;
+    height: calc(90vh - 84px);
+    bottom: 0;
+    padding: 0.5em 0 2em;
+    overflow: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+  }
+  #toc nav > ul  {
+    margin-bottom: 2em;
+  }
+  #toc ul {
+    margin: 0 0 0 4px;
+    font-size: var(--small-font-size);
+  }
+  #toc ul p, #toc ul li {
+    margin: 2px 0;
+    line-height: 22px;
+  }
+  img { /* future proofing */
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* pagination */
+@media print {
+  body {
+    width: 100%;
+  }
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+  #n-copyright-notice {
+    border-bottom: none;
+  }
+  #toc, #n-introduction {
+    page-break-before: always;
+  }
+  #toc {
+    border-top: none;
+    padding-top: 0;
+  }
+  figure, pre {
+    page-break-inside: avoid;
+  }
+  figure {
+    overflow: scroll;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+  h2+*, h3+*, h4+*, h5+*, h6+* {
+    page-break-before: avoid;
+  }
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 10pt;
+  }
+  table {
+    border: 1px solid #ddd;
+  }
+  td {
+    border-top: 1px solid #ddd;
+  }
+}
+
+@page :first {
+  padding-top: 0;
+  @top-left {
+    content: normal;
+    border: none;
+  }
+  @top-center {
+    content: normal;
+    border: none;
+  }
+  @top-right {
+    content: normal;
+    border: none;
+  }
+}
+
+@page {
+  size: A4;
+  margin-bottom: 45mm;
+  padding-top: 20px;
+}
+
+/* Changes introduced to fix issues found during implementation */
+
+/* Separate body from document info even without intervening H1 */
+section {
+  clear: both;
+}
+
+/* Top align author divs, to avoid names without organization dropping level with org names */
+.author {
+  vertical-align: top;
+}
+
+/* Style section numbers with more space between number and title */
+.section-number {
+  padding-right: 0.5em;
+}
+
+/* Add styling for a link in the ToC that points to the top of the document */
+a.toplink {
+  float: right;
+  margin: 8px 0.5em 0;
+}
+
+/* Fix the dl styling to match the RFC 7992 attributes */
+dl > dt,
+dl.dlParallel > dt {
+  float: left;
+  margin-right: 1em;
+}
+dl.dlNewline > dt {
+  float: none;
+}
+
+/* Provide styling for table cell text alignment */
+table td.text-left,
+table th.text-left {
+  text-align: left;
+}
+table td.text-center,
+table th.text-center {
+  text-align: center;
+}
+table td.text-right,
+table th.text-right {
+  text-align: right;
+}
+
+/* Make the alternative author contact information look less like just another
+   author, and group it closer with the primary author contact information */
+.alternative-contact {
+  margin: 0.5em 0 0.25em 0;
+}
+address .non-ascii {
+  margin: 0 0 0 2em;
+}
+
+/* With it being possible to set tables with alignment
+  left, center, and right, { width: 100%; } does not make sense */
+table {
+  width: auto;
+}
+
+/* Avoid reference text that sits in a block with very wide left margin,
+   because of a long floating dt label.*/
+.references dd {
+  overflow: visible;
+}
+
+/* Control caption placement */
+caption {
+  caption-side: bottom;
+}
+
+/* Limit the width of the author address vcard, so names in right-to-left
+   script don't end up on the other side of the page. */
+
+address.vcard {
+  max-width: 20em;
+  margin-right: auto;
+}
+
+/* For address alignment dependent on LTR or RTL scripts */
+address div.left {
+  text-align: left;
+}
+address div.right {
+  text-align: right;
+}
+
+/* Provide table alignment support.  We can't use the alignX classes above
+   since they do unwanted things with caption and other styling. */
+table.right {
+ margin-left: auto;
+ margin-right: 0;
+}
+table.center {
+ margin-left: auto;
+ margin-right: auto;
+}
+table.left {
+ margin-left: 0;
+ margin-right: auto;
+}
+
+/* Give the table caption label the same styling as the figcaption */
+
+@media print {
+  .toplink {
+    display: none;
+  }
+
+  /* avoid overwriting the top border line with the ToC header */
+  #toc {
+    padding-top: 1px;
+  }
+
+  /* Avoid page breaks inside dl and author address entries */
+  dd {
+    page-break-before: avoid;
+  }
+  .vcard {
+    page-break-inside: avoid;
+  }
+
+}
+/* Tweak the bcp14 keyword presentation */
+.bcp14 {
+  font-variant: small-caps;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+</style>
+<link href="rfc-local.css" rel="stylesheet" type="text/css">
+</head>
+<body>
+<table class="ears">
+<thead><tr>
+<td class="left">Internet-Draft</td>
+<td class="center">PP protocol</td>
+<td class="right">March 2020</td>
+</tr></thead>
+<tfoot><tr>
+<td class="left">Davidson</td>
+<td class="center">Expires 17 September 2020</td>
+<td class="right">[Page]</td>
+</tr></tfoot>
+</table>
+<div id="external-metadata" class="document-information"></div>
+<div id="internal-metadata" class="document-information">
+<dl id="identifiers">
+<dt class="label-workgroup">Workgroup:</dt>
+<dd class="workgroup">Network Working Group</dd>
+<dt class="label-internet-draft">Internet-Draft:</dt>
+<dd class="internet-draft">draft-davidson-pp-protocol-latest</dd>
+<dt class="label-published">Published:</dt>
+<dd class="published">
+<time datetime="2020-03-16" class="published">16 March 2020</time>
+    </dd>
+<dt class="label-intended-status">Intended Status:</dt>
+<dd class="intended-status">Informational</dd>
+<dt class="label-expires">Expires:</dt>
+<dd class="expires"><time datetime="2020-09-17">17 September 2020</time></dd>
+<dt class="label-authors">Author:</dt>
+<dd class="authors">
+<div class="author">
+      <div class="author-name">A. Davidson</div>
+<div class="org">Cloudflare Portugal</div>
+</div>
+</dd>
+</dl>
+</div>
+<h1 id="title">Privacy Pass: The Protocol</h1>
+<section id="section-abstract">
+      <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
+<p id="section-abstract-1">This document specifies the Privacy Pass protocol for privacy-preserving
+authorization of clients to servers. The privacy requirement is that
+client re-authorization events cannot be linked to any previous initial
+authorization. Privacy Pass is intended to be used as a performant
+protocol in the Internet setting.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+</section>
+<div id="status-of-memo">
+<section id="section-boilerplate.1">
+        <h2 id="name-status-of-this-memo">
+<a href="#name-status-of-this-memo" class="section-name selfRef">Status of This Memo</a>
+        </h2>
+<p id="section-boilerplate.1-1">
+        This Internet-Draft is submitted in full conformance with the
+        provisions of BCP 78 and BCP 79.<a href="#section-boilerplate.1-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-2">
+        Internet-Drafts are working documents of the Internet Engineering Task
+        Force (IETF). Note that other groups may also distribute working
+        documents as Internet-Drafts. The list of current Internet-Drafts is
+        at <span><a href="https://datatracker.ietf.org/drafts/current/">https://datatracker.ietf.org/drafts/current/</a></span>.<a href="#section-boilerplate.1-2" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-3">
+        Internet-Drafts are draft documents valid for a maximum of six months
+        and may be updated, replaced, or obsoleted by other documents at any
+        time. It is inappropriate to use Internet-Drafts as reference
+        material or to cite them other than as "work in progress."<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-4">
+        This Internet-Draft will expire on 17 September 2020.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="copyright">
+<section id="section-boilerplate.2">
+        <h2 id="name-copyright-notice">
+<a href="#name-copyright-notice" class="section-name selfRef">Copyright Notice</a>
+        </h2>
+<p id="section-boilerplate.2-1">
+            Copyright (c) 2020 IETF Trust and the persons identified as the
+            document authors. All rights reserved.<a href="#section-boilerplate.2-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.2-2">
+            This document is subject to BCP 78 and the IETF Trust's Legal
+            Provisions Relating to IETF Documents
+            (<span><a href="https://trustee.ietf.org/license-info">https://trustee.ietf.org/license-info</a></span>) in effect on the date of
+            publication of this document. Please review these documents
+            carefully, as they describe your rights and restrictions with
+            respect to this document. Code Components extracted from this
+            document must include Simplified BSD License text as described in
+            Section 4.e of the Trust Legal Provisions and are provided without
+            warranty as described in the Simplified BSD License.<a href="#section-boilerplate.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="toc">
+<section id="section-toc.1">
+        <a href="#" onclick="scroll(0,0)" class="toplink">▲</a><h2 id="name-table-of-contents">
+<a href="#name-table-of-contents" class="section-name selfRef">Table of Contents</a>
+        </h2>
+<nav class="toc"><ul class="toc ulEmpty">
+<li class="toc ulEmpty" id="section-toc.1-1.1">
+            <p id="section-toc.1-1.1.1"><a href="#section-1" class="xref">1</a>.  <a href="#name-introduction" class="xref">Introduction</a><a href="#section-toc.1-1.1.1" class="pilcrow">¶</a></p>
+<ul class="toc ulEmpty">
+<li class="toc ulEmpty" id="section-toc.1-1.1.2.1">
+                <p id="section-toc.1-1.1.2.1.1"><a href="#section-1.1" class="xref">1.1</a>.  <a href="#name-layout" class="xref">Layout</a><a href="#section-toc.1-1.1.2.1.1" class="pilcrow">¶</a></p>
+</li>
+</ul>
+</li>
+<li class="toc ulEmpty" id="section-toc.1-1.2">
+            <p id="section-toc.1-1.2.1"><a href="#section-2" class="xref">2</a>.  <a href="#name-preliminaries" class="xref">Preliminaries</a><a href="#section-toc.1-1.2.1" class="pilcrow">¶</a></p>
+<ul class="toc ulEmpty">
+<li class="toc ulEmpty" id="section-toc.1-1.2.2.1">
+                <p id="section-toc.1-1.2.2.1.1"><a href="#section-2.1" class="xref">2.1</a>.  <a href="#name-terminology" class="xref">Terminology</a><a href="#section-toc.1-1.2.2.1.1" class="pilcrow">¶</a></p>
+</li>
+<li class="toc ulEmpty" id="section-toc.1-1.2.2.2">
+                <p id="section-toc.1-1.2.2.2.1"><a href="#section-2.2" class="xref">2.2</a>.  <a href="#name-basic-assumptions" class="xref">Basic assumptions</a><a href="#section-toc.1-1.2.2.2.1" class="pilcrow">¶</a></p>
+</li>
+</ul>
+</li>
+<li class="toc ulEmpty" id="section-toc.1-1.3">
+            <p id="section-toc.1-1.3.1"><a href="#section-3" class="xref">3</a>.  <a href="#name-privacy-pass-functional-api" class="xref">Privacy Pass functional API</a><a href="#section-toc.1-1.3.1" class="pilcrow">¶</a></p>
+<ul class="toc ulEmpty">
+<li class="toc ulEmpty" id="section-toc.1-1.3.2.1">
+                <p id="section-toc.1-1.3.2.1.1"><a href="#section-3.1" class="xref">3.1</a>.  <a href="#name-data-structures" class="xref">Data structures</a><a href="#section-toc.1-1.3.2.1.1" class="pilcrow">¶</a></p>
+<ul class="toc ulEmpty">
+<li class="toc ulEmpty" id="section-toc.1-1.3.2.1.2.1">
+                    <p id="section-toc.1-1.3.2.1.2.1.1"><a href="#section-3.1.1" class="xref">3.1.1</a>.  <a href="#name-ciphersuite" class="xref">Ciphersuite</a><a href="#section-toc.1-1.3.2.1.2.1.1" class="pilcrow">¶</a></p>
+</li>
+<li class="toc ulEmpty" id="section-toc.1-1.3.2.1.2.2">
+                    <p id="section-toc.1-1.3.2.1.2.2.1"><a href="#section-3.1.2" class="xref">3.1.2</a>.  <a href="#name-serverconfig" class="xref">ServerConfig</a><a href="#section-toc.1-1.3.2.1.2.2.1" class="pilcrow">¶</a></p>
+</li>
+<li class="toc ulEmpty" id="section-toc.1-1.3.2.1.2.3">
+                    <p id="section-toc.1-1.3.2.1.2.3.1"><a href="#section-3.1.3" class="xref">3.1.3</a>.  <a href="#name-serverupdate" class="xref">ServerUpdate</a><a href="#section-toc.1-1.3.2.1.2.3.1" class="pilcrow">¶</a></p>
+</li>
+<li class="toc ulEmpty" id="section-toc.1-1.3.2.1.2.4">
+                    <p id="section-toc.1-1.3.2.1.2.4.1"><a href="#section-3.1.4" class="xref">3.1.4</a>.  <a href="#name-clientconfig" class="xref">ClientConfig</a><a href="#section-toc.1-1.3.2.1.2.4.1" class="pilcrow">¶</a></p>
+</li>
+<li class="toc ulEmpty" id="section-toc.1-1.3.2.1.2.5">
+                    <p id="section-toc.1-1.3.2.1.2.5.1"><a href="#section-3.1.5" class="xref">3.1.5</a>.  <a href="#name-clientissuanceinput" class="xref">ClientIssuanceInput</a><a href="#section-toc.1-1.3.2.1.2.5.1" class="pilcrow">¶</a></p>
+</li>
+<li class="toc ulEmpty" id="section-toc.1-1.3.2.1.2.6">
+                    <p id="section-toc.1-1.3.2.1.2.6.1"><a href="#section-3.1.6" class="xref">3.1.6</a>.  <a href="#name-issuancemessage" class="xref">IssuanceMessage</a><a href="#section-toc.1-1.3.2.1.2.6.1" class="pilcrow">¶</a></p>
+</li>
+<li class="toc ulEmpty" id="section-toc.1-1.3.2.1.2.7">
+                    <p id="section-toc.1-1.3.2.1.2.7.1"><a href="#section-3.1.7" class="xref">3.1.7</a>.  <a href="#name-issuanceresponse" class="xref">IssuanceResponse</a><a href="#section-toc.1-1.3.2.1.2.7.1" class="pilcrow">¶</a></p>
+</li>
+<li class="toc ulEmpty" id="section-toc.1-1.3.2.1.2.8">
+                    <p id="section-toc.1-1.3.2.1.2.8.1"><a href="#section-3.1.8" class="xref">3.1.8</a>.  <a href="#name-redemptiontoken" class="xref">RedemptionToken</a><a href="#section-toc.1-1.3.2.1.2.8.1" class="pilcrow">¶</a></p>
+</li>
+<li class="toc ulEmpty" id="section-toc.1-1.3.2.1.2.9">
+                    <p id="section-toc.1-1.3.2.1.2.9.1"><a href="#section-3.1.9" class="xref">3.1.9</a>.  <a href="#name-redemptionmessage" class="xref">RedemptionMessage</a><a href="#section-toc.1-1.3.2.1.2.9.1" class="pilcrow">¶</a></p>
+</li>
+<li class="toc ulEmpty" id="section-toc.1-1.3.2.1.2.10">
+                    <p id="section-toc.1-1.3.2.1.2.10.1"><a href="#section-3.1.10" class="xref">3.1.10</a>. <a href="#name-redemptionresponse" class="xref">RedemptionResponse</a><a href="#section-toc.1-1.3.2.1.2.10.1" class="pilcrow">¶</a></p>
+</li>
+</ul>
+</li>
+<li class="toc ulEmpty" id="section-toc.1-1.3.2.2">
+                <p id="section-toc.1-1.3.2.2.1"><a href="#section-3.2" class="xref">3.2</a>.  <a href="#name-api-functions" class="xref">API functions</a><a href="#section-toc.1-1.3.2.2.1" class="pilcrow">¶</a></p>
+<ul class="toc ulEmpty">
+<li class="toc ulEmpty" id="section-toc.1-1.3.2.2.2.1">
+                    <p id="section-toc.1-1.3.2.2.2.1.1"><a href="#section-3.2.1" class="xref">3.2.1</a>.  <a href="#name-pp_server_setup" class="xref">PP_Server_Setup</a><a href="#section-toc.1-1.3.2.2.2.1.1" class="pilcrow">¶</a></p>
+</li>
+<li class="toc ulEmpty" id="section-toc.1-1.3.2.2.2.2">
+                    <p id="section-toc.1-1.3.2.2.2.2.1"><a href="#section-3.2.2" class="xref">3.2.2</a>.  <a href="#name-pp_client_setup" class="xref">PP_Client_Setup</a><a href="#section-toc.1-1.3.2.2.2.2.1" class="pilcrow">¶</a></p>
+</li>
+<li class="toc ulEmpty" id="section-toc.1-1.3.2.2.2.3">
+                    <p id="section-toc.1-1.3.2.2.2.3.1"><a href="#section-3.2.3" class="xref">3.2.3</a>.  <a href="#name-pp_generate" class="xref">PP_Generate</a><a href="#section-toc.1-1.3.2.2.2.3.1" class="pilcrow">¶</a></p>
+</li>
+<li class="toc ulEmpty" id="section-toc.1-1.3.2.2.2.4">
+                    <p id="section-toc.1-1.3.2.2.2.4.1"><a href="#section-3.2.4" class="xref">3.2.4</a>.  <a href="#name-pp_issue" class="xref">PP_Issue</a><a href="#section-toc.1-1.3.2.2.2.4.1" class="pilcrow">¶</a></p>
+</li>
+<li class="toc ulEmpty" id="section-toc.1-1.3.2.2.2.5">
+                    <p id="section-toc.1-1.3.2.2.2.5.1"><a href="#section-3.2.5" class="xref">3.2.5</a>.  <a href="#name-pp_process" class="xref">PP_Process</a><a href="#section-toc.1-1.3.2.2.2.5.1" class="pilcrow">¶</a></p>
+</li>
+<li class="toc ulEmpty" id="section-toc.1-1.3.2.2.2.6">
+                    <p id="section-toc.1-1.3.2.2.2.6.1"><a href="#section-3.2.6" class="xref">3.2.6</a>.  <a href="#name-pp_redeem" class="xref">PP_Redeem</a><a href="#section-toc.1-1.3.2.2.2.6.1" class="pilcrow">¶</a></p>
+</li>
+<li class="toc ulEmpty" id="section-toc.1-1.3.2.2.2.7">
+                    <p id="section-toc.1-1.3.2.2.2.7.1"><a href="#section-3.2.7" class="xref">3.2.7</a>.  <a href="#name-pp_verify" class="xref">PP_Verify</a><a href="#section-toc.1-1.3.2.2.2.7.1" class="pilcrow">¶</a></p>
+</li>
+</ul>
+</li>
+<li class="toc ulEmpty" id="section-toc.1-1.3.2.3">
+                <p id="section-toc.1-1.3.2.3.1"><a href="#section-3.3" class="xref">3.3</a>.  <a href="#name-error-types" class="xref">Error types</a><a href="#section-toc.1-1.3.2.3.1" class="pilcrow">¶</a></p>
+</li>
+</ul>
+</li>
+<li class="toc ulEmpty" id="section-toc.1-1.4">
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="xref">4</a>.  <a href="#name-generalized-protocol-overvi" class="xref">Generalized protocol overview</a><a href="#section-toc.1-1.4.1" class="pilcrow">¶</a></p>
+<ul class="toc ulEmpty">
+<li class="toc ulEmpty" id="section-toc.1-1.4.2.1">
+                <p id="section-toc.1-1.4.2.1.1"><a href="#section-4.1" class="xref">4.1</a>.  <a href="#name-key-initialisation-phase" class="xref">Key initialisation phase</a><a href="#section-toc.1-1.4.2.1.1" class="pilcrow">¶</a></p>
+</li>
+<li class="toc ulEmpty" id="section-toc.1-1.4.2.2">
+                <p id="section-toc.1-1.4.2.2.1"><a href="#section-4.2" class="xref">4.2</a>.  <a href="#name-issuance-phase" class="xref">Issuance phase</a><a href="#section-toc.1-1.4.2.2.1" class="pilcrow">¶</a></p>
+</li>
+<li class="toc ulEmpty" id="section-toc.1-1.4.2.3">
+                <p id="section-toc.1-1.4.2.3.1"><a href="#section-4.3" class="xref">4.3</a>.  <a href="#name-redemption-phase" class="xref">Redemption phase</a><a href="#section-toc.1-1.4.2.3.1" class="pilcrow">¶</a></p>
+<ul class="toc ulEmpty">
+<li class="toc ulEmpty" id="section-toc.1-1.4.2.3.2.1">
+                    <p id="section-toc.1-1.4.2.3.2.1.1"><a href="#section-4.3.1" class="xref">4.3.1</a>.  <a href="#name-double-spend-protection" class="xref">Double-spend protection</a><a href="#section-toc.1-1.4.2.3.2.1.1" class="pilcrow">¶</a></p>
+</li>
+</ul>
+</li>
+<li class="toc ulEmpty" id="section-toc.1-1.4.2.4">
+                <p id="section-toc.1-1.4.2.4.1"><a href="#section-4.4" class="xref">4.4</a>.  <a href="#name-handling-errors" class="xref">Handling errors</a><a href="#section-toc.1-1.4.2.4.1" class="pilcrow">¶</a></p>
+</li>
+</ul>
+</li>
+<li class="toc ulEmpty" id="section-toc.1-1.5">
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="xref">5</a>.  <a href="#name-security-requirements" class="xref">Security requirements</a><a href="#section-toc.1-1.5.1" class="pilcrow">¶</a></p>
+<ul class="toc ulEmpty">
+<li class="toc ulEmpty" id="section-toc.1-1.5.2.1">
+                <p id="section-toc.1-1.5.2.1.1"><a href="#section-5.1" class="xref">5.1</a>.  <a href="#name-unlinkability" class="xref">Unlinkability</a><a href="#section-toc.1-1.5.2.1.1" class="pilcrow">¶</a></p>
+</li>
+<li class="toc ulEmpty" id="section-toc.1-1.5.2.2">
+                <p id="section-toc.1-1.5.2.2.1"><a href="#section-5.2" class="xref">5.2</a>.  <a href="#name-one-more-unforgeability" class="xref">One-more unforgeability</a><a href="#section-toc.1-1.5.2.2.1" class="pilcrow">¶</a></p>
+</li>
+<li class="toc ulEmpty" id="section-toc.1-1.5.2.3">
+                <p id="section-toc.1-1.5.2.3.1"><a href="#section-5.3" class="xref">5.3</a>.  <a href="#name-double-spend-protection-2" class="xref">Double-spend protection</a><a href="#section-toc.1-1.5.2.3.1" class="pilcrow">¶</a></p>
+</li>
+</ul>
+</li>
+<li class="toc ulEmpty" id="section-toc.1-1.6">
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="xref">6</a>.  <a href="#name-voprf-instantiation" class="xref">VOPRF instantiation</a><a href="#section-toc.1-1.6.1" class="pilcrow">¶</a></p>
+<ul class="toc ulEmpty">
+<li class="toc ulEmpty" id="section-toc.1-1.6.2.1">
+                <p id="section-toc.1-1.6.2.1.1"><a href="#section-6.1" class="xref">6.1</a>.  <a href="#name-voprf-conventions" class="xref">VOPRF conventions</a><a href="#section-toc.1-1.6.2.1.1" class="pilcrow">¶</a></p>
+<ul class="toc ulEmpty">
+<li class="toc ulEmpty" id="section-toc.1-1.6.2.1.2.1">
+                    <p id="section-toc.1-1.6.2.1.2.1.1"><a href="#section-6.1.1" class="xref">6.1.1</a>.  <a href="#name-ciphersuites" class="xref">Ciphersuites</a><a href="#section-toc.1-1.6.2.1.2.1.1" class="pilcrow">¶</a></p>
+</li>
+<li class="toc ulEmpty" id="section-toc.1-1.6.2.1.2.2">
+                    <p id="section-toc.1-1.6.2.1.2.2.1"><a href="#section-6.1.2" class="xref">6.1.2</a>.  <a href="#name-prime-order-group-conventio" class="xref">Prime-order group conventions</a><a href="#section-toc.1-1.6.2.1.2.2.1" class="pilcrow">¶</a></p>
+</li>
+</ul>
+</li>
+<li class="toc ulEmpty" id="section-toc.1-1.6.2.2">
+                <p id="section-toc.1-1.6.2.2.1"><a href="#section-6.2" class="xref">6.2</a>.  <a href="#name-api-instantiation" class="xref">API instantiation</a><a href="#section-toc.1-1.6.2.2.1" class="pilcrow">¶</a></p>
+<ul class="toc ulEmpty">
+<li class="toc ulEmpty" id="section-toc.1-1.6.2.2.2.1">
+                    <p id="section-toc.1-1.6.2.2.2.1.1"><a href="#section-6.2.1" class="xref">6.2.1</a>.  <a href="#name-pp_server_setup-2" class="xref">PP_Server_Setup</a><a href="#section-toc.1-1.6.2.2.2.1.1" class="pilcrow">¶</a></p>
+</li>
+<li class="toc ulEmpty" id="section-toc.1-1.6.2.2.2.2">
+                    <p id="section-toc.1-1.6.2.2.2.2.1"><a href="#section-6.2.2" class="xref">6.2.2</a>.  <a href="#name-pp_client_setup-2" class="xref">PP_Client_Setup</a><a href="#section-toc.1-1.6.2.2.2.2.1" class="pilcrow">¶</a></p>
+</li>
+<li class="toc ulEmpty" id="section-toc.1-1.6.2.2.2.3">
+                    <p id="section-toc.1-1.6.2.2.2.3.1"><a href="#section-6.2.3" class="xref">6.2.3</a>.  <a href="#name-pp_generate-2" class="xref">PP_Generate</a><a href="#section-toc.1-1.6.2.2.2.3.1" class="pilcrow">¶</a></p>
+</li>
+<li class="toc ulEmpty" id="section-toc.1-1.6.2.2.2.4">
+                    <p id="section-toc.1-1.6.2.2.2.4.1"><a href="#section-6.2.4" class="xref">6.2.4</a>.  <a href="#name-pp_issue-2" class="xref">PP_Issue</a><a href="#section-toc.1-1.6.2.2.2.4.1" class="pilcrow">¶</a></p>
+</li>
+<li class="toc ulEmpty" id="section-toc.1-1.6.2.2.2.5">
+                    <p id="section-toc.1-1.6.2.2.2.5.1"><a href="#section-6.2.5" class="xref">6.2.5</a>.  <a href="#name-pp_process-2" class="xref">PP_Process</a><a href="#section-toc.1-1.6.2.2.2.5.1" class="pilcrow">¶</a></p>
+</li>
+<li class="toc ulEmpty" id="section-toc.1-1.6.2.2.2.6">
+                    <p id="section-toc.1-1.6.2.2.2.6.1"><a href="#section-6.2.6" class="xref">6.2.6</a>.  <a href="#name-pp_redeem-2" class="xref">PP_Redeem</a><a href="#section-toc.1-1.6.2.2.2.6.1" class="pilcrow">¶</a></p>
+</li>
+<li class="toc ulEmpty" id="section-toc.1-1.6.2.2.2.7">
+                    <p id="section-toc.1-1.6.2.2.2.7.1"><a href="#section-6.2.7" class="xref">6.2.7</a>.  <a href="#name-pp_verify-2" class="xref">PP_Verify</a><a href="#section-toc.1-1.6.2.2.2.7.1" class="pilcrow">¶</a></p>
+</li>
+</ul>
+</li>
+<li class="toc ulEmpty" id="section-toc.1-1.6.2.3">
+                <p id="section-toc.1-1.6.2.3.1"><a href="#section-6.3" class="xref">6.3</a>.  <a href="#name-security-justification" class="xref">Security justification</a><a href="#section-toc.1-1.6.2.3.1" class="pilcrow">¶</a></p>
+</li>
+</ul>
+</li>
+<li class="toc ulEmpty" id="section-toc.1-1.7">
+            <p id="section-toc.1-1.7.1"><a href="#section-7" class="xref">7</a>.  <a href="#name-ciphersuites-2" class="xref">Ciphersuites</a><a href="#section-toc.1-1.7.1" class="pilcrow">¶</a></p>
+</li>
+<li class="toc ulEmpty" id="section-toc.1-1.8">
+            <p id="section-toc.1-1.8.1"><a href="#section-8" class="xref">8</a>.  <a href="#name-extensions-framework-policy" class="xref">Extensions framework policy</a><a href="#section-toc.1-1.8.1" class="pilcrow">¶</a></p>
+</li>
+<li class="toc ulEmpty" id="section-toc.1-1.9">
+            <p id="section-toc.1-1.9.1"><a href="#section-9" class="xref">9</a>.  <a href="#name-references" class="xref">References</a><a href="#section-toc.1-1.9.1" class="pilcrow">¶</a></p>
+<ul class="toc ulEmpty">
+<li class="toc ulEmpty" id="section-toc.1-1.9.2.1">
+                <p id="section-toc.1-1.9.2.1.1"><a href="#section-9.1" class="xref">9.1</a>.  <a href="#name-normative-references" class="xref">Normative References</a><a href="#section-toc.1-1.9.2.1.1" class="pilcrow">¶</a></p>
+</li>
+<li class="toc ulEmpty" id="section-toc.1-1.9.2.2">
+                <p id="section-toc.1-1.9.2.2.1"><a href="#section-9.2" class="xref">9.2</a>.  <a href="#name-informative-references" class="xref">Informative References</a><a href="#section-toc.1-1.9.2.2.1" class="pilcrow">¶</a></p>
+</li>
+</ul>
+</li>
+<li class="toc ulEmpty" id="section-toc.1-1.10">
+            <p id="section-toc.1-1.10.1"><a href="#section-appendix.a" class="xref"></a><a href="#name-authors-address" class="xref">Author's Address</a><a href="#section-toc.1-1.10.1" class="pilcrow">¶</a></p>
+</li>
+</ul>
+</nav>
+</section>
+</div>
+<div id="introduction">
+<section id="section-1">
+      <h2 id="name-introduction">
+<a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
+      </h2>
+<p id="section-1-1">A common problem on the internet is providing an effective mechanism for
+servers to derive trust from the clients that it interacts with, without
+hampering the accessibility of honest clients. Typically, this can be
+done by providing some sort of authorization challenge to the client. A
+client providing a correct solution to the challenge can be provided
+with a cookie. This cookie can be presented the next time it interacts
+with the server. The resurfacing of this cookie allows the server to see
+that the client passed the authorization check in the past.
+Consequently, the server can re-authorize the client again immediately,
+without the need for the client to complete a new challenge.<a href="#section-1-1" class="pilcrow">¶</a></p>
+<p id="section-1-2">In scenarios where clients need to identify themselves, the
+authorization challenge usually take the form of some sort of login
+procedure. Otherwise, the server may just want to verify that the client
+demonstrates some particular facet of behavior (such as being human).
+Such cases may only require a lightweight form of challenge (such as
+completing a CAPTCHA).<a href="#section-1-2" class="pilcrow">¶</a></p>
+<p id="section-1-3">In both cases, if a server issues cookies on successful completion of
+challenges, then the client can use this cookie to bypass future
+challenges for the lifetime of the cookie. The downside of this approach
+is that it provides the server with the ability to link all of the
+client's interactions that it witnesses. In these situations, the
+client's effective privacy is dramatically reduced.<a href="#section-1-3" class="pilcrow">¶</a></p>
+<p id="section-1-4">The Privacy Pass protocol was initially introduced as a mechanism for
+authorizing clients that had already been authorized in the past,
+without compromising their privacy <span>[<a href="#DGSTV18" class="xref">DGSTV18</a>]</span>. The protocol works by
+providing client's with privacy-preserving re-authentication tokens for
+a particular server. The tokens are "privacy-preserving" in the sense
+that they cannot be linked back to the previous session where they were
+issued.<a href="#section-1-4" class="pilcrow">¶</a></p>
+<p id="section-1-5">The Internet performance company Cloudflare has already implemented
+server-side support for an initial version of the Privacy Pass protocol
+<span>[<a href="#PPSRV" class="xref">PPSRV</a>]</span>, and client-side implementations also exist <span>[<a href="#PPEXT" class="xref">PPEXT</a>]</span>. More
+recently, a number of applications have been built upon the protocol, or
+slight variants of it; see: <span>[<a href="#TRUST" class="xref">TRUST</a>]</span>, <span>[<a href="#OpenPrivacy" class="xref">OpenPrivacy</a>]</span>,
+<span>[<a href="#PrivateStorage" class="xref">PrivateStorage</a>]</span>. The protocol can be instantiated using a
+cryptographic primitive known as a verifiable oblivious pseudorandom
+function (VOPRF) for implementing the authorization mechanism. Such
+VOPRF protocols can be implemented already in prime-order groups, and
+constructions are currently being drafted in separate standardization
+processes <span>[<a href="#I-D.irtf-cfrg-voprf" class="xref">I-D.irtf-cfrg-voprf</a>]</span>.<a href="#section-1-5" class="pilcrow">¶</a></p>
+<p id="section-1-6">The Privacy Pass protocol is split into three stages. The first stage,
+initialisation, produces the global server configuration that is
+broadcast to (and stored by) all clients. The "issuance" phase provides
+the client with unlinkable tokens that can be used to initiate
+re-authorization with the server in the future. The redemption phase
+allows the client to redeem a given re-authorization token with the
+server that it interacted with during the issuance phase. In addition,
+the protocol must satisfy two cryptographic security requirements known
+as "unlinkability" and "unforgeability".<a href="#section-1-6" class="pilcrow">¶</a></p>
+<p id="section-1-7">This document will lay out the generic description of the protocol,
+along with a secure implementation based on the VOPRF primitive. It will
+also describe the structure of protocol messages, and the framework for
+characterizing possible extensions to the protocol description.<a href="#section-1-7" class="pilcrow">¶</a></p>
+<p id="section-1-8">This document DOES NOT cover the architectural framework required for
+running and maintaining the Privacy Pass protocol in the Internet
+setting. In addition, it DOES NOT cover the choices that are necessary
+for ensuring that client privacy leaks do not occur. Both of these
+considerations are covered in a separate document
+<span>[<a href="#draft-davidson-pp-architecture" class="xref">draft-davidson-pp-architecture</a>]</span>.<a href="#section-1-8" class="pilcrow">¶</a></p>
+<div id="layout">
+<section id="section-1.1">
+        <h3 id="name-layout">
+<a href="#section-1.1" class="section-number selfRef">1.1. </a><a href="#name-layout" class="section-name selfRef">Layout</a>
+        </h3>
+<ul>
+<li id="section-1.1-1.1">
+            <a href="#prelim" class="xref">Section 2</a>: Describes the terminology and assumptions adopted
+throughout this document.<a href="#section-1.1-1.1" class="pilcrow">¶</a>
+</li>
+<li id="section-1.1-1.2">
+            <a href="#pp-api" class="xref">Section 3</a>: Describes the internal functions and data structures that
+are used by the Privacy Pass protocol.<a href="#section-1.1-1.2" class="pilcrow">¶</a>
+</li>
+<li id="section-1.1-1.3">
+            <a href="#overview" class="xref">Section 4</a>: Describes the generic protocol structure, based on the
+API provided in <a href="#pp-api" class="xref">Section 3</a>.<a href="#section-1.1-1.3" class="pilcrow">¶</a>
+</li>
+<li id="section-1.1-1.4">
+            <a href="#sec-requirements" class="xref">Section 5</a>: Describes the security requirements of the
+generic protocol description.<a href="#section-1.1-1.4" class="pilcrow">¶</a>
+</li>
+<li id="section-1.1-1.5">
+            <a href="#voprf-protocol" class="xref">Section 6</a>: Describes an instantiation of the API in
+<a href="#pp-api" class="xref">Section 3</a> based on the VOPRF protocol described in
+<span>[<a href="#I-D.irtf-cfrg-voprf" class="xref">I-D.irtf-cfrg-voprf</a>]</span>.<a href="#section-1.1-1.5" class="pilcrow">¶</a>
+</li>
+<li id="section-1.1-1.6">
+            <a href="#pp-ciphersuites" class="xref">Section 7</a>: Describes ciphersuites for use with the Privacy
+Pass protocol based on the instantiation in <a href="#voprf-protocol" class="xref">Section 6</a>.<a href="#section-1.1-1.6" class="pilcrow">¶</a>
+</li>
+<li id="section-1.1-1.7">
+            <a href="#extensions" class="xref">Section 8</a>: Describes the policy for implementing extensions to
+the Privacy Pass protocol.<a href="#section-1.1-1.7" class="pilcrow">¶</a>
+</li>
+</ul>
+</section>
+</div>
+</section>
+</div>
+<div id="prelim">
+<section id="section-2">
+      <h2 id="name-preliminaries">
+<a href="#section-2" class="section-number selfRef">2. </a><a href="#name-preliminaries" class="section-name selfRef">Preliminaries</a>
+      </h2>
+<div id="terminology">
+<section id="section-2.1">
+        <h3 id="name-terminology">
+<a href="#section-2.1" class="section-number selfRef">2.1. </a><a href="#name-terminology" class="section-name selfRef">Terminology</a>
+        </h3>
+<p id="section-2.1-1">The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+"SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
+document are to be interpreted as described in <span>[<a href="#RFC2119" class="xref">RFC2119</a>]</span>.<a href="#section-2.1-1" class="pilcrow">¶</a></p>
+<p id="section-2.1-2">The following terms are used throughout this document.<a href="#section-2.1-2" class="pilcrow">¶</a></p>
+<ul>
+<li id="section-2.1-3.1">Server: A service that provides the server-side functionality required
+by the protocol documented here (typically denoted S).<a href="#section-2.1-3.1" class="pilcrow">¶</a>
+</li>
+<li id="section-2.1-3.2">Client: An entity that seeks authorization from a server that supports
+interactions in the Privacy Pass protocol (typically denoted C).<a href="#section-2.1-3.2" class="pilcrow">¶</a>
+</li>
+<li id="section-2.1-3.3">Key: The secret key used by the Server for authorizing client data.<a href="#section-2.1-3.3" class="pilcrow">¶</a>
+</li>
+<li id="section-2.1-3.4">Commitment: Alternative name for Server's public key corresponding to
+the secret key that they hold.<a href="#section-2.1-3.4" class="pilcrow">¶</a>
+</li>
+</ul>
+<p id="section-2.1-4">We assume that all protocol messages are encoded into raw byte format
+before being sent. We use the TLS presentation language <span>[<a href="#RFC8446" class="xref">RFC8446</a>]</span> to
+describe the structure of protocol data types and messages.<a href="#section-2.1-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="basic-assumptions">
+<section id="section-2.2">
+        <h3 id="name-basic-assumptions">
+<a href="#section-2.2" class="section-number selfRef">2.2. </a><a href="#name-basic-assumptions" class="section-name selfRef">Basic assumptions</a>
+        </h3>
+<p id="section-2.2-1">We make only a few minimal assumptions about the environment that the
+clients and servers that support the Privacy Pass protocol.<a href="#section-2.2-1" class="pilcrow">¶</a></p>
+<ul>
+<li id="section-2.2-2.1">At any one time, we assume that the Server uses only one configuration
+containing their ciphersuite choice along with their secret key data.<a href="#section-2.2-2.1" class="pilcrow">¶</a>
+</li>
+<li id="section-2.2-2.2">We assume that the client has access to a global directory of the
+current configurations used by all Privacy Pass servers.<a href="#section-2.2-2.2" class="pilcrow">¶</a>
+</li>
+</ul>
+<p id="section-2.2-3">The wider ecosystem that this protocol is employed in is described in
+<span>[<a href="#draft-davidson-pp-architecture" class="xref">draft-davidson-pp-architecture</a>]</span>.<a href="#section-2.2-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="pp-api">
+<section id="section-3">
+      <h2 id="name-privacy-pass-functional-api">
+<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-privacy-pass-functional-api" class="section-name selfRef">Privacy Pass functional API</a>
+      </h2>
+<p id="section-3-1">Before describing the protocol itself in <a href="#overview" class="xref">Section 4</a>, we describe the
+underlying functions that are used in substantiating the protocol
+itself. Instantiating this set of functions, along with meeting the
+security requirements highlighted in <a href="#sec-requirements" class="xref">Section 5</a>, provides an
+instantiation of the wider protocol.<a href="#section-3-1" class="pilcrow">¶</a></p>
+<p id="section-3-2">We provide an explicit instantiation of the Privacy Pass API, based on
+the public API provided in <span>[<a href="#I-D.irtf-cfrg-voprf" class="xref">I-D.irtf-cfrg-voprf</a>]</span>.<a href="#section-3-2" class="pilcrow">¶</a></p>
+<div id="pp-structs">
+<section id="section-3.1">
+        <h3 id="name-data-structures">
+<a href="#section-3.1" class="section-number selfRef">3.1. </a><a href="#name-data-structures" class="section-name selfRef">Data structures</a>
+        </h3>
+<p id="section-3.1-1">The following data structures are used throughout the Privacy Pass
+protocol and written in the TLS presentation language <span>[<a href="#RFC8446" class="xref">RFC8446</a>]</span>. It is
+intended that any of these data structures can be written into
+widely-adopted encoding schemes such as those detailed in TLS
+<span>[<a href="#RFC8446" class="xref">RFC8446</a>]</span>, CBOR <span>[<a href="#RFC7049" class="xref">RFC7049</a>]</span>, and JSON <span>[<a href="#RFC7159" class="xref">RFC7159</a>]</span>.<a href="#section-3.1-1" class="pilcrow">¶</a></p>
+<div id="pp-ciphersuite-struct">
+<section id="section-3.1.1">
+          <h4 id="name-ciphersuite">
+<a href="#section-3.1.1" class="section-number selfRef">3.1.1. </a><a href="#name-ciphersuite" class="section-name selfRef">Ciphersuite</a>
+          </h4>
+<p id="section-3.1.1-1">The <code>Ciphersuite</code> enum describes the ciphersuite that is used for
+instantiating the Privacy Pass protocol. The values that we provide here
+are described further in <a href="#pp-ciphersuites" class="xref">Section 7</a>.<a href="#section-3.1.1-1" class="pilcrow">¶</a></p>
+<div class="artwork art-text alignLeft" id="section-3.1.1-2">
+<pre>
+enum {
+  p384_hkdf_sha512_sswu_ro(0)
+  p521_hkdf_sha512_sswu_ro(1)
+  curve448_hkdf_sha512_ell2_ro(2)
+  (255)
+} Ciphersuite;
+</pre><a href="#section-3.1.1-2" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="pp-srv-cfg-struct">
+<section id="section-3.1.2">
+          <h4 id="name-serverconfig">
+<a href="#section-3.1.2" class="section-number selfRef">3.1.2. </a><a href="#name-serverconfig" class="section-name selfRef">ServerConfig</a>
+          </h4>
+<p id="section-3.1.2-1">The <code>ServerConfig</code> struct describes and maintains the underlying
+configuration that is used by the server.<a href="#section-3.1.2-1" class="pilcrow">¶</a></p>
+<div class="artwork art-text alignLeft" id="section-3.1.2-2">
+<pre>
+struct {
+  opaque id&lt;0..2^16-1&gt;
+  Ciphersuite ciphersuite;
+  SecretKey key&lt;1..2^32-1&gt;;
+  PublicKey pub_key&lt;1..2^32-1&gt;;
+  opaque max_evals&lt;0..255&gt;;
+} ServerConfig;
+</pre><a href="#section-3.1.2-2" class="pilcrow">¶</a>
+</div>
+<p id="section-3.1.2-3">The <code>SecretKey</code> and <code>PublicKey</code> types are just wrappers around byte
+arrays.<a href="#section-3.1.2-3" class="pilcrow">¶</a></p>
+<div class="artwork art-text alignLeft" id="section-3.1.2-4">
+<pre>
+opaque SecretKey&lt;1..2^32-1&gt;;
+opaque PublicKey&lt;1..2^32-1&gt;;
+</pre><a href="#section-3.1.2-4" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="pp-srv-cfg-update">
+<section id="section-3.1.3">
+          <h4 id="name-serverupdate">
+<a href="#section-3.1.3" class="section-number selfRef">3.1.3. </a><a href="#name-serverupdate" class="section-name selfRef">ServerUpdate</a>
+          </h4>
+<p id="section-3.1.3-1">The <code>ServerUpdate</code> struct contains the public information related to the
+creation of a new <code>ServerConfig</code> message. This is sent either directly
+to clients, or indirectly via an update process.<a href="#section-3.1.3-1" class="pilcrow">¶</a></p>
+<div class="artwork art-text alignLeft" id="section-3.1.3-2">
+<pre>
+struct {
+  opaque id&lt;0..2^16-1&gt;
+  Ciphersuite ciphersuite;
+  PublicKey pub_key&lt;1..2^32-1&gt;;
+  opaque max_evals&lt;0..255&gt;;
+} ServerUpdate;
+</pre><a href="#section-3.1.3-2" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="pp-cli-cfg-struct">
+<section id="section-3.1.4">
+          <h4 id="name-clientconfig">
+<a href="#section-3.1.4" class="section-number selfRef">3.1.4. </a><a href="#name-clientconfig" class="section-name selfRef">ClientConfig</a>
+          </h4>
+<p id="section-3.1.4-1">The <code>ClientConfig</code> struct describes and maintains the underlying
+configuration that is used by the client.<a href="#section-3.1.4-1" class="pilcrow">¶</a></p>
+<div class="artwork art-text alignLeft" id="section-3.1.4-2">
+<pre>
+struct {
+  ServerUpdate s;
+} ClientConfig;
+</pre><a href="#section-3.1.4-2" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="pp-cli-issue-input">
+<section id="section-3.1.5">
+          <h4 id="name-clientissuanceinput">
+<a href="#section-3.1.5" class="section-number selfRef">3.1.5. </a><a href="#name-clientissuanceinput" class="section-name selfRef">ClientIssuanceInput</a>
+          </h4>
+<p id="section-3.1.5-1">The <code>ClientIssuanceInput</code> struct describes the data that is generated by
+the client, that is necessary in sending to and processing issuance data
+received from the server.<a href="#section-3.1.5-1" class="pilcrow">¶</a></p>
+<div class="artwork art-text alignLeft" id="section-3.1.5-2">
+<pre>
+struct {
+  ClientIssuanceProcessing client_data;
+  ClientIssuanceElement msg_data;
+} ClientIssuanceInput;
+</pre><a href="#section-3.1.5-2" class="pilcrow">¶</a>
+</div>
+<p id="section-3.1.5-3">The struct contains two internal structs, described below.<a href="#section-3.1.5-3" class="pilcrow">¶</a></p>
+<div class="artwork art-text alignLeft" id="section-3.1.5-4">
+<pre>
+struct {
+  opaque client_data&lt;1..2^32-1&gt;;
+  opaque gen_data&lt;1..2^32-1&gt;;
+} ClientIssuanceProcessing;
+</pre><a href="#section-3.1.5-4" class="pilcrow">¶</a>
+</div>
+<div class="artwork art-text alignLeft" id="section-3.1.5-5">
+<pre>
+struct {
+  opaque issue_data&lt;1..2^32-1&gt;;
+} ClientIssuanceElement;
+</pre><a href="#section-3.1.5-5" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="pp-cli-issue-message">
+<section id="section-3.1.6">
+          <h4 id="name-issuancemessage">
+<a href="#section-3.1.6" class="section-number selfRef">3.1.6. </a><a href="#name-issuancemessage" class="section-name selfRef">IssuanceMessage</a>
+          </h4>
+<p id="section-3.1.6-1">The <code>IssuanceMessage</code> struct corresponds to the message that the
+client sends to the server during the issuance phase of the protocol
+(<a href="#issuance-phase" class="xref">Section 4.2</a>).<a href="#section-3.1.6-1" class="pilcrow">¶</a></p>
+<div class="artwork art-text alignLeft" id="section-3.1.6-2">
+<pre>
+struct {
+  ClientIssuanceElement issue_element&lt;1..n&gt;
+} IssuanceMessage;
+</pre><a href="#section-3.1.6-2" class="pilcrow">¶</a>
+</div>
+<p id="section-3.1.6-3">In the above, <code>issue_element</code> is a vector of length <code>n</code>, where <code>n</code> is
+some value that must satisfy <code>n =&lt; m</code> for <code>m = max_evals</code> that is
+specified in the <code>ServerConfig</code>.<a href="#section-3.1.6-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="pp-srv-issue-response">
+<section id="section-3.1.7">
+          <h4 id="name-issuanceresponse">
+<a href="#section-3.1.7" class="section-number selfRef">3.1.7. </a><a href="#name-issuanceresponse" class="section-name selfRef">IssuanceResponse</a>
+          </h4>
+<p id="section-3.1.7-1">The <code>IssuanceResponse</code> struct describes the data that returned by
+the server, derived from the issuance message that is sent by the
+client.<a href="#section-3.1.7-1" class="pilcrow">¶</a></p>
+<div class="artwork art-text alignLeft" id="section-3.1.7-2">
+<pre>
+struct {
+  ServerEvaluation evaluation&lt;1..n&gt;;
+  ServerProof proof;
+} IssuanceResponse;
+</pre><a href="#section-3.1.7-2" class="pilcrow">¶</a>
+</div>
+<p id="section-3.1.7-3">The value of <code>n</code> is determined by the length of the
+<code>ClientIssuanceElement</code> vector in the <code>IssuanceMessage</code> struct. The
+internal data types are described below.<a href="#section-3.1.7-3" class="pilcrow">¶</a></p>
+<div class="artwork art-text alignLeft" id="section-3.1.7-4">
+<pre>
+struct {
+  opaque data&lt;1..2^32-1&gt;;
+} ServerEvaluation;
+</pre><a href="#section-3.1.7-4" class="pilcrow">¶</a>
+</div>
+<div class="artwork art-text alignLeft" id="section-3.1.7-5">
+<pre>
+struct {
+  opaque data&lt;1..2*(2^32)-1&gt;;
+} ServerProof;
+</pre><a href="#section-3.1.7-5" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="pp-redemption-token">
+<section id="section-3.1.8">
+          <h4 id="name-redemptiontoken">
+<a href="#section-3.1.8" class="section-number selfRef">3.1.8. </a><a href="#name-redemptiontoken" class="section-name selfRef">RedemptionToken</a>
+          </h4>
+<p id="section-3.1.8-1">The <code>RedemptionToken</code> struct contains the data required to generate the
+client message in the redemption phase of the Privacy Pass protocol.
+This data is generated in the issuance phase of the protocol, after
+receiving the <code>IssuanceResponse</code> message.<a href="#section-3.1.8-1" class="pilcrow">¶</a></p>
+<div class="artwork art-text alignLeft" id="section-3.1.8-2">
+<pre>
+struct {
+  opaque data&lt;1..2^32-1&gt;;
+  opaque issued&lt;1..2^32-1&gt;;
+} RedemptionToken;
+</pre><a href="#section-3.1.8-2" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="pp-redemption-message">
+<section id="section-3.1.9">
+          <h4 id="name-redemptionmessage">
+<a href="#section-3.1.9" class="section-number selfRef">3.1.9. </a><a href="#name-redemptionmessage" class="section-name selfRef">RedemptionMessage</a>
+          </h4>
+<p id="section-3.1.9-1">The <code>RedemptionMessage</code> struct consists of the data that is sent by the
+client during the redemption phase of the protocol
+(<a href="#redemption-phase" class="xref">Section 4.3</a>).<a href="#section-3.1.9-1" class="pilcrow">¶</a></p>
+<div class="artwork art-text alignLeft" id="section-3.1.9-2">
+<pre>
+struct {
+  opaque data&lt;1..2^32-1&gt;;
+  opaque tag&lt;1..2^32-1&gt;;
+  opaque aux&lt;1..2^16-1&gt;;
+} RedemptionMessage;
+</pre><a href="#section-3.1.9-2" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="pp-redemption-response">
+<section id="section-3.1.10">
+          <h4 id="name-redemptionresponse">
+<a href="#section-3.1.10" class="section-number selfRef">3.1.10. </a><a href="#name-redemptionresponse" class="section-name selfRef">RedemptionResponse</a>
+          </h4>
+<p id="section-3.1.10-1">The <code>RedemptionResponse</code> struct corresponds a boolean value indicating
+whether the <code>RedemptionMessage</code> sent by the client is valid, along with
+any associated data.<a href="#section-3.1.10-1" class="pilcrow">¶</a></p>
+<div class="artwork art-text alignLeft" id="section-3.1.10-2">
+<pre>
+struct {
+  boolean success;
+  opaque additional_data&lt;1..2^32-1&gt;;
+} RedemptionResponse;
+</pre><a href="#section-3.1.10-2" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="pp-functions">
+<section id="section-3.2">
+        <h3 id="name-api-functions">
+<a href="#section-3.2" class="section-number selfRef">3.2. </a><a href="#name-api-functions" class="section-name selfRef">API functions</a>
+        </h3>
+<p id="section-3.2-1">The following functions wrap the core of the functionality required in
+the Privacy Pass protocol. For each of the descriptions, we essentially
+provide the function signature, leaving the actual contents to be
+provided by specific instantiations or extensions.<a href="#section-3.2-1" class="pilcrow">¶</a></p>
+<div id="ppserversetup">
+<section id="section-3.2.1">
+          <h4 id="name-pp_server_setup">
+<a href="#section-3.2.1" class="section-number selfRef">3.2.1. </a><a href="#name-pp_server_setup" class="section-name selfRef">PP_Server_Setup</a>
+          </h4>
+<p id="section-3.2.1-1">Run by the Privacy Pass server to generate its configuration. The
+key-pair used in the server configuration are generated fresh on each
+invocation.<a href="#section-3.2.1-1" class="pilcrow">¶</a></p>
+<p id="section-3.2.1-2">Inputs:<a href="#section-3.2.1-2" class="pilcrow">¶</a></p>
+<ul>
+<li id="section-3.2.1-3.1">
+              <code>id</code>:  A unique identifier corresponding to the setting of
+<code>ServerConfig.id</code>.<a href="#section-3.2.1-3.1" class="pilcrow">¶</a>
+</li>
+</ul>
+<p id="section-3.2.1-4">Outputs:<a href="#section-3.2.1-4" class="pilcrow">¶</a></p>
+<ul>
+<li id="section-3.2.1-5.1">
+              <code>cfg</code>:    A <code>ServerConfig</code> struct (<a href="#pp-srv-cfg-struct" class="xref">Section 3.1.2</a>).<a href="#section-3.2.1-5.1" class="pilcrow">¶</a>
+</li>
+<li id="section-3.2.1-5.2">
+              <code>update</code>: A <code>ServerUpdate</code> struct.<a href="#section-3.2.1-5.2" class="pilcrow">¶</a>
+</li>
+</ul>
+<p id="section-3.2.1-6">Throws:<a href="#section-3.2.1-6" class="pilcrow">¶</a></p>
+<ul>
+<li id="section-3.2.1-7.1">
+              <code>ERR_UNSUPPORTED_CONFIG</code> (<a href="#errors" class="xref">Section 3.3</a>)<a href="#section-3.2.1-7.1" class="pilcrow">¶</a>
+</li>
+</ul>
+</section>
+</div>
+<div id="ppclientsetup">
+<section id="section-3.2.2">
+          <h4 id="name-pp_client_setup">
+<a href="#section-3.2.2" class="section-number selfRef">3.2.2. </a><a href="#name-pp_client_setup" class="section-name selfRef">PP_Client_Setup</a>
+          </h4>
+<p id="section-3.2.2-1">Run by the Privacy Pass client to generate its configuration. The input
+public key <code>pub_key</code> in the client configuration MUST correspond to a
+valid server public key.<a href="#section-3.2.2-1" class="pilcrow">¶</a></p>
+<p id="section-3.2.2-2">Inputs:<a href="#section-3.2.2-2" class="pilcrow">¶</a></p>
+<ul>
+<li id="section-3.2.2-3.1">
+              <code>id</code>:      A unique identifier corresponding to the setting of
+          <code>ServerConfig.id</code>.<a href="#section-3.2.2-3.1" class="pilcrow">¶</a>
+</li>
+<li id="section-3.2.2-3.2">
+              <code>update</code>:  A <code>ServerUpdate</code> struct.<a href="#section-3.2.2-3.2" class="pilcrow">¶</a>
+</li>
+</ul>
+<p id="section-3.2.2-4">Outputs:<a href="#section-3.2.2-4" class="pilcrow">¶</a></p>
+<ul>
+<li id="section-3.2.2-5.1">
+              <code>cfg</code>:     A <code>ClientConfig</code> struct (<a href="#pp-cli-cfg-struct" class="xref">Section 3.1.4</a>).<a href="#section-3.2.2-5.1" class="pilcrow">¶</a>
+</li>
+</ul>
+<p id="section-3.2.2-6">Throws:<a href="#section-3.2.2-6" class="pilcrow">¶</a></p>
+<ul>
+<li id="section-3.2.2-7.1">
+              <code>ERR_UNSUPPORTED_CONFIG</code> (<a href="#errors" class="xref">Section 3.3</a>)<a href="#section-3.2.2-7.1" class="pilcrow">¶</a>
+</li>
+</ul>
+</section>
+</div>
+<div id="ppgenerate">
+<section id="section-3.2.3">
+          <h4 id="name-pp_generate">
+<a href="#section-3.2.3" class="section-number selfRef">3.2.3. </a><a href="#name-pp_generate" class="section-name selfRef">PP_Generate</a>
+          </h4>
+<p id="section-3.2.3-1">A function run by the client to generate the initial data that is used
+as its input in the Privacy Pass protocol.<a href="#section-3.2.3-1" class="pilcrow">¶</a></p>
+<p id="section-3.2.3-2">Inputs:<a href="#section-3.2.3-2" class="pilcrow">¶</a></p>
+<ul>
+<li id="section-3.2.3-3.1">
+              <code>cli_cfg</code>: A <code>ClientConfig</code> struct.<a href="#section-3.2.3-3.1" class="pilcrow">¶</a>
+</li>
+<li id="section-3.2.3-3.2">
+              <code>m</code>:       A <code>uint8</code> value corresponding to the number of Privacy
+           Pass tokens to generate.<a href="#section-3.2.3-3.2" class="pilcrow">¶</a>
+</li>
+</ul>
+<p id="section-3.2.3-4">Outputs:<a href="#section-3.2.3-4" class="pilcrow">¶</a></p>
+<ul>
+<li id="section-3.2.3-5.1">
+              <code>issuance_data</code>: A <code>ClientIssuanceInput</code> struct.<a href="#section-3.2.3-5.1" class="pilcrow">¶</a>
+</li>
+</ul>
+</section>
+</div>
+<div id="ppissue">
+<section id="section-3.2.4">
+          <h4 id="name-pp_issue">
+<a href="#section-3.2.4" class="section-number selfRef">3.2.4. </a><a href="#name-pp_issue" class="section-name selfRef">PP_Issue</a>
+          </h4>
+<p id="section-3.2.4-1">A function run by the server to issue valid redemption tokens to the
+client.<a href="#section-3.2.4-1" class="pilcrow">¶</a></p>
+<p id="section-3.2.4-2">Inputs:<a href="#section-3.2.4-2" class="pilcrow">¶</a></p>
+<ul>
+<li id="section-3.2.4-3.1">
+              <code>srv_cfg</code>:           A <code>ServerConfig</code> struct.<a href="#section-3.2.4-3.1" class="pilcrow">¶</a>
+</li>
+<li id="section-3.2.4-3.2">
+              <code>issuance_message</code>:  A <code>IssuanceMessage</code> struct.<a href="#section-3.2.4-3.2" class="pilcrow">¶</a>
+</li>
+</ul>
+<p id="section-3.2.4-4">Outputs:<a href="#section-3.2.4-4" class="pilcrow">¶</a></p>
+<ul>
+<li id="section-3.2.4-5.1">
+              <code>issuance_response</code>: A <code>IssuanceResponse</code> struct.<a href="#section-3.2.4-5.1" class="pilcrow">¶</a>
+</li>
+</ul>
+<p id="section-3.2.4-6">Throws:<a href="#section-3.2.4-6" class="pilcrow">¶</a></p>
+<ul>
+<li id="section-3.2.4-7.1">
+              <code>ERR_MAX_EVALS</code> (<a href="#errors" class="xref">Section 3.3</a>)<a href="#section-3.2.4-7.1" class="pilcrow">¶</a>
+</li>
+</ul>
+</section>
+</div>
+<div id="ppprocess">
+<section id="section-3.2.5">
+          <h4 id="name-pp_process">
+<a href="#section-3.2.5" class="section-number selfRef">3.2.5. </a><a href="#name-pp_process" class="section-name selfRef">PP_Process</a>
+          </h4>
+<p id="section-3.2.5-1">Run by the client when processing the server response in the issuance
+phase of the protocol. The output of this function is an array of
+<code>RedemptionToken</code> objects that are unlinkable from the server's
+computation in <code>PP_Issue</code>.<a href="#section-3.2.5-1" class="pilcrow">¶</a></p>
+<p id="section-3.2.5-2">Inputs:<a href="#section-3.2.5-2" class="pilcrow">¶</a></p>
+<ul>
+<li id="section-3.2.5-3.1">
+              <code>cli_cfg</code>:           A <code>ClientConfig</code> struct.<a href="#section-3.2.5-3.1" class="pilcrow">¶</a>
+</li>
+<li id="section-3.2.5-3.2">
+              <code>issuance_response</code>: A <code>IssuanceResponse</code> struct.<a href="#section-3.2.5-3.2" class="pilcrow">¶</a>
+</li>
+<li id="section-3.2.5-3.3">
+              <code>processing_data</code>:   A <code>ClientIssuanceProcessing</code> struct.<a href="#section-3.2.5-3.3" class="pilcrow">¶</a>
+</li>
+</ul>
+<p id="section-3.2.5-4">Outputs:<a href="#section-3.2.5-4" class="pilcrow">¶</a></p>
+<ul>
+<li id="section-3.2.5-5.1">
+              <code>tokens</code>: A vector of <code>RedemptionToken</code> structs, length equal to the
+length of the <code>ServerEvaluation</code> vector in the
+<code>IssuanceResponse</code> struct.<a href="#section-3.2.5-5.1" class="pilcrow">¶</a>
+</li>
+</ul>
+<p id="section-3.2.5-6">Throws:<a href="#section-3.2.5-6" class="pilcrow">¶</a></p>
+<ul>
+<li id="section-3.2.5-7.1">
+              <code>ERR_PROOF_VALIDATION</code> (<a href="#errors" class="xref">Section 3.3</a>)<a href="#section-3.2.5-7.1" class="pilcrow">¶</a>
+</li>
+</ul>
+</section>
+</div>
+<div id="ppredeem">
+<section id="section-3.2.6">
+          <h4 id="name-pp_redeem">
+<a href="#section-3.2.6" class="section-number selfRef">3.2.6. </a><a href="#name-pp_redeem" class="section-name selfRef">PP_Redeem</a>
+          </h4>
+<p id="section-3.2.6-1">Run by the client in the redemption phase of the protocol to generate
+the client's message.<a href="#section-3.2.6-1" class="pilcrow">¶</a></p>
+<p id="section-3.2.6-2">Inputs:<a href="#section-3.2.6-2" class="pilcrow">¶</a></p>
+<ul>
+<li id="section-3.2.6-3.1">
+              <code>cli_cfg</code>: A <code>ClientConfig</code> struct.<a href="#section-3.2.6-3.1" class="pilcrow">¶</a>
+</li>
+<li id="section-3.2.6-3.2">
+              <code>token</code>:   A <code>RedemptionToken</code> struct.<a href="#section-3.2.6-3.2" class="pilcrow">¶</a>
+</li>
+<li id="section-3.2.6-3.3">
+              <code>aux</code>:     An <code>opaque&lt;1..2^32-1&gt;</code> type corresponding to arbitrary
+           auxiliary data.<a href="#section-3.2.6-3.3" class="pilcrow">¶</a>
+</li>
+</ul>
+<p id="section-3.2.6-4">Outputs:<a href="#section-3.2.6-4" class="pilcrow">¶</a></p>
+<ul>
+<li id="section-3.2.6-5.1">
+              <code>message</code>: A <code>RedemptionMessage</code> struct.<a href="#section-3.2.6-5.1" class="pilcrow">¶</a>
+</li>
+</ul>
+</section>
+</div>
+<div id="ppverify">
+<section id="section-3.2.7">
+          <h4 id="name-pp_verify">
+<a href="#section-3.2.7" class="section-number selfRef">3.2.7. </a><a href="#name-pp_verify" class="section-name selfRef">PP_Verify</a>
+          </h4>
+<p id="section-3.2.7-1">Run by the server in the redemption phase of the protocol. Determines
+whether the data sent by the client is valid.<a href="#section-3.2.7-1" class="pilcrow">¶</a></p>
+<p id="section-3.2.7-2">Inputs:<a href="#section-3.2.7-2" class="pilcrow">¶</a></p>
+<ul>
+<li id="section-3.2.7-3.1">
+              <code>srv_cfg</code>: A <code>ServerConfig</code> struct.<a href="#section-3.2.7-3.1" class="pilcrow">¶</a>
+</li>
+<li id="section-3.2.7-3.2">
+              <code>message</code>: A <code>RedemptionMessage</code> struct.<a href="#section-3.2.7-3.2" class="pilcrow">¶</a>
+</li>
+</ul>
+<p id="section-3.2.7-4">Outputs:<a href="#section-3.2.7-4" class="pilcrow">¶</a></p>
+<ul>
+<li id="section-3.2.7-5.1">
+              <code>response</code>: A <code>RedemptionResponse</code> struct.<a href="#section-3.2.7-5.1" class="pilcrow">¶</a>
+</li>
+</ul>
+</section>
+</div>
+</section>
+</div>
+<div id="errors">
+<section id="section-3.3">
+        <h3 id="name-error-types">
+<a href="#section-3.3" class="section-number selfRef">3.3. </a><a href="#name-error-types" class="section-name selfRef">Error types</a>
+        </h3>
+<ul>
+<li id="section-3.3-1.1">
+            <code>ERR_UNSUPPORTED_CONFIG</code>: Error occurred when trying to recover
+configuration with unknown identifier<a href="#section-3.3-1.1" class="pilcrow">¶</a>
+</li>
+<li id="section-3.3-1.2">
+            <code>ERR_MAX_EVALS</code>: Client attempted to invoke server issuance with
+number of inputs that is larger than server-specified max_evals value.<a href="#section-3.3-1.2" class="pilcrow">¶</a>
+</li>
+<li id="section-3.3-1.3">
+            <code>ERR_PROOF_VALIDATION</code>: Client unable to verify proof that is part of
+the server response.<a href="#section-3.3-1.3" class="pilcrow">¶</a>
+</li>
+<li id="section-3.3-1.4">
+            <code>ERR_DOUBLE_SPEND</code>: Indicates that a client has attempted to redeem a
+token that has already been used for authorization.<a href="#section-3.3-1.4" class="pilcrow">¶</a>
+</li>
+</ul>
+</section>
+</div>
+</section>
+</div>
+<div id="overview">
+<section id="section-4">
+      <h2 id="name-generalized-protocol-overvi">
+<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-generalized-protocol-overvi" class="section-name selfRef">Generalized protocol overview</a>
+      </h2>
+<p id="section-4-1">In this document, we wan to provide a client (C) with the capability to
+authenticate itself in a lightweight manner to a server (S). The
+authorization mechanism should not reveal to the server anything about
+the client; in addition, the client should not be able to forge valid
+credentials in situations where it does not possess any. These
+requirements are covered in <a href="#sec-requirements" class="xref">Section 5</a>.<a href="#section-4-1" class="pilcrow">¶</a></p>
+<p id="section-4-2">In this section, we will give a broad overview of how the Privacy Pass
+protocol functions in achieving these goals. The generic protocol can be
+split into three phases: initialisation, issuance and redemption. These
+three phases are built upon the Privacy Pass API in <a href="#pp-api" class="xref">Section 3</a>. We show
+later (<a href="#voprf-protocol" class="xref">Section 6</a>) that this API can be implemented using an
+underlying VOPRF protocol. We provide this extra layer of abstraction to
+allow building extensions into the Privacy Pass protocol that go beyond
+what is specified in <span>[<a href="#I-D.irtf-cfrg-voprf" class="xref">I-D.irtf-cfrg-voprf</a>]</span>.<a href="#section-4-2" class="pilcrow">¶</a></p>
+<div id="key-init-phase">
+<section id="section-4.1">
+        <h3 id="name-key-initialisation-phase">
+<a href="#section-4.1" class="section-number selfRef">4.1. </a><a href="#name-key-initialisation-phase" class="section-name selfRef">Key initialisation phase</a>
+        </h3>
+<p id="section-4.1-1">In the initialisation phase, the server generates the configuration that
+it will use for future instantiations of the protocol. It MUST broadcast
+the configuration that it generates, along with the public key, so that
+clients are aware of which configuration to use when interacting with
+the server.<a href="#section-4.1-1" class="pilcrow">¶</a></p>
+<p id="section-4.1-2">In situations where the number of clients are small, it could do this by
+sending the data to the client directly. But in situations where there
+is a large number of clients, the best way of doing is likely to be via
+posting this information to a public bulletin board. We assume that the
+server only has a single configuration in place at any one time. There
+are privacy restrictions related to this that are described in more
+detail in the architectural document <span>[<a href="#draft-davidson-pp-architecture" class="xref">draft-davidson-pp-architecture</a>]</span>.<a href="#section-4.1-2" class="pilcrow">¶</a></p>
+<p id="section-4.1-3">We give a diagrammatic representation of the initialisation phase below.<a href="#section-4.1-3" class="pilcrow">¶</a></p>
+<div class="artwork art-text alignLeft" id="section-4.1-4">
+<pre>
+  C(cfgs)                                                   S(cfg_id)
+  -------------------------------------------------------------------
+                              (cfg, update) = PP_Server_Setup(cfg_id)
+
+                             update
+                      &lt;-------------------
+
+  c_cfg = PP_Client_Setup(cfg_id,update)
+  cfgs.set(update.id,c_cfg)
+</pre><a href="#section-4.1-4" class="pilcrow">¶</a>
+</div>
+<p id="section-4.1-5">In the following (and as above), we will assume that the server <code>S</code> is
+uniquely identifiable by an internal attribute <code>id</code>. We assume the same
+internal attribute exists for the public key <code>s_cfg.pub_key</code>. This can
+be obtained, for example, by hashing the contents of the object -
+either the name or underlying contained bytes - using a
+collision-resistant hash function, such as SHA256.<a href="#section-4.1-5" class="pilcrow">¶</a></p>
+<p id="section-4.1-6">Note that the client stores their own configuration in the map <code>cfgs</code>
+for future Privacy Pass interactions with <code>S</code>.<a href="#section-4.1-6" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="issuance-phase">
+<section id="section-4.2">
+        <h3 id="name-issuance-phase">
+<a href="#section-4.2" class="section-number selfRef">4.2. </a><a href="#name-issuance-phase" class="section-name selfRef">Issuance phase</a>
+        </h3>
+<p id="section-4.2-1">The issuance phase allows the client to construct <code>RedemptionToken</code>
+object resulting from an interaction with a server <code>S</code> that it has
+previously interacted with. We give a diagrammatic overview of the
+protocol below.<a href="#section-4.2-1" class="pilcrow">¶</a></p>
+<div class="artwork art-text alignLeft" id="section-4.2-2">
+<pre>
+  C(cfgs,store,m)                                            S(s_cfg)
+  -------------------------------------------------------------------
+                              S.id
+                      &lt;------------------
+
+  c_cfg = cfgs.get(S.id)
+  issue_input = PP_Generate(c_cfg, m)
+  msg = issue_input.msg_data
+  process = issue_input.client_data
+
+                               msg
+                      -------------------&gt;
+
+                                  issue_resp = PP_Issue(s_cfg,c_dat)
+
+                           issue_resp
+                      &lt;-------------------
+
+  tokens = PP_Process(c_cfg,issue_resp,process)
+  store[S.id].push(tokens)
+</pre><a href="#section-4.2-2" class="pilcrow">¶</a>
+</div>
+<p id="section-4.2-3">In the diagram above, the client MUST know the supported server
+configuration before it interacts with the Privacy Pass API. The client
+input <code>store</code> is used for appending redemption tokens that are linked to
+the server id <code>S.id</code>.<a href="#section-4.2-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="redemption-phase">
+<section id="section-4.3">
+        <h3 id="name-redemption-phase">
+<a href="#section-4.3" class="section-number selfRef">4.3. </a><a href="#name-redemption-phase" class="section-name selfRef">Redemption phase</a>
+        </h3>
+<p id="section-4.3-1">The redemption phase allows the client to reauthenticate to the server,
+using data that it has received from a previous issuance phase. We lay
+out the security requirements in <a href="#sec-requirements" class="xref">Section 5</a> that establish
+that the client redemption data is not linkable to any given issuance
+session.<a href="#section-4.3-1" class="pilcrow">¶</a></p>
+<div class="artwork art-text alignLeft" id="section-4.3-2">
+<pre>
+  C(cfgs,store,aux)                                   S(s_cfg,ds_idx)
+  -------------------------------------------------------------------
+                               S.id
+                        &lt;------------------
+
+  c_cfg = cfgs.get(S.id)
+  token = store[S.id].pop()
+  msg = PP_Redeem(c_cfg,token,aux)
+
+                               msg
+                        ------------------&gt;
+
+                               if (ds_idx.includes(data)) {
+                                 panic(ERR_DOUBLE_SPEND)
+                               }
+                               resp = PP_Verify(srv_cfg,data,tag,aux)
+                               if (resp.success) {
+                                 ds_idx.push(data)
+                               }
+
+                                resp
+                        &lt;------------------
+  Output resp
+</pre><a href="#section-4.3-2" class="pilcrow">¶</a>
+</div>
+<p id="section-4.3-3">The client input <code>aux</code> is arbitrary byte data that is used for linking
+the redemption request to the specific session. We RECOMMEND that <code>aux</code>
+is constructed as the following concatenated byte-encoded data:<a href="#section-4.3-3" class="pilcrow">¶</a></p>
+<div class="artwork art-text alignLeft" id="section-4.3-4">
+<pre>
+${C.id} .. ${S.id} .. ${current_time()} .. ${requested_resource()}
+</pre><a href="#section-4.3-4" class="pilcrow">¶</a>
+</div>
+<p id="section-4.3-5">The usage of <code>current_time()</code> allows the server to check that the
+redemption request has happened in an appropriate time window. The
+function <code>requested_resource()</code> is an optional suffix that relates to
+any specific resources that the client has requested from the server, in
+order to trigger the authorization request.<a href="#section-4.3-5" class="pilcrow">¶</a></p>
+<div id="double-spend-protection">
+<section id="section-4.3.1">
+          <h4 id="name-double-spend-protection">
+<a href="#section-4.3.1" class="section-number selfRef">4.3.1. </a><a href="#name-double-spend-protection" class="section-name selfRef">Double-spend protection</a>
+          </h4>
+<p id="section-4.3.1-1">To protect against clients that attempt to spend a value <code>data</code> more
+than once, the server uses an index, <code>ds_idx</code>, to collect valid inputs
+and then check against in future protocols. Since this store needs to
+only be optimized for storage and querying, a structure such as a Bloom
+filter suffices. Importantly, the server MUST only eject this storage
+after a key rotation occurs since all previous client data will be
+rendered obsolete after such an event.<a href="#section-4.3.1-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="handling-errors">
+<section id="section-4.4">
+        <h3 id="name-handling-errors">
+<a href="#section-4.4" class="section-number selfRef">4.4. </a><a href="#name-handling-errors" class="section-name selfRef">Handling errors</a>
+        </h3>
+<p id="section-4.4-1">It is possible for the API functions from <a href="#pp-functions" class="xref">Section 3.2</a> to return one
+of the errors indicated in <a href="#errors" class="xref">Section 3.3</a> rather than their expected value.
+In these cases, we assume that the entire protocol execution panics with
+the value of the error.<a href="#section-4.4-1" class="pilcrow">¶</a></p>
+<p id="section-4.4-2">If a panic occurs during the server's operations for one of the
+documented errors, then the server returns an error response indicating
+the error that occurred.<a href="#section-4.4-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="sec-requirements">
+<section id="section-5">
+      <h2 id="name-security-requirements">
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-security-requirements" class="section-name selfRef">Security requirements</a>
+      </h2>
+<p id="section-5-1">We discuss the security requirements that are necessary to uphold when
+instantiating the Privacy Pass protocol. In particular, we focus on the
+security requirements of "unlinkability", and "unforgeability".
+Informally, the notion of unlinkability is required to preserve the
+privacy of the client in the redemption phase of the protocol. The
+notion of unforgeability is to protect against adversarial clients that
+look to subvert the security of the protocol.<a href="#section-5-1" class="pilcrow">¶</a></p>
+<p id="section-5-2">Since these are cryptographic security requirements we discuss them with
+respect to a polynomial-time algorithm known as the adversary that is
+looking to subvert the security guarantee. More details on both security
+requirements can be found in <span>[<a href="#DGSTV18" class="xref">DGSTV18</a>]</span> and <span>[<a href="#KLOR20" class="xref">KLOR20</a>]</span>.<a href="#section-5-2" class="pilcrow">¶</a></p>
+<p id="section-5-3">Note that the privacy requirements of the protocol are covered in the
+architectural framework document <span>[<a href="#draft-davidson-pp-architecture" class="xref">draft-davidson-pp-architecture</a>]</span>.<a href="#section-5-3" class="pilcrow">¶</a></p>
+<div id="unlinkability">
+<section id="section-5.1">
+        <h3 id="name-unlinkability">
+<a href="#section-5.1" class="section-number selfRef">5.1. </a><a href="#name-unlinkability" class="section-name selfRef">Unlinkability</a>
+        </h3>
+<p id="section-5.1-1">Informally, the "unlinkability" requirement states that it is impossible
+for an adversarial server to link the client's message in a redemption
+session, to any previous issuance session that it has encountered.<a href="#section-5.1-1" class="pilcrow">¶</a></p>
+<p id="section-5.1-2">Formally speaking the security model is the following:<a href="#section-5.1-2" class="pilcrow">¶</a></p>
+<ul>
+<li id="section-5.1-3.1">The adversary runs <code>PP_Server_Setup</code> and generates a key-pair <code>(k,
+pk)</code>.<a href="#section-5.1-3.1" class="pilcrow">¶</a>
+</li>
+<li id="section-5.1-3.2">The adversary specifies a number <code>Q</code> of issuance phases to initiate,
+where each phase <code>i in 1..Q</code> consists of <code>m_i</code> server evaluations.<a href="#section-5.1-3.2" class="pilcrow">¶</a>
+</li>
+<li id="section-5.1-3.3">The adversary runs <code>PP_Issue</code> using the key-pair that it generated on
+each of the client messages in the issuance phase.<a href="#section-5.1-3.3" class="pilcrow">¶</a>
+</li>
+<li id="section-5.1-3.4">When the adversary wants it stops the issuance phase, and a random
+number <code>l</code> is picked from <code>1..Q</code>.<a href="#section-5.1-3.4" class="pilcrow">¶</a>
+</li>
+<li id="section-5.1-3.5">A redemption phase is initiated with a single token with index <code>i</code>
+randomly sampled from <code>1..m_l</code>.<a href="#section-5.1-3.5" class="pilcrow">¶</a>
+</li>
+<li id="section-5.1-3.6">The adversary guesses an index <code>l_guess</code> corresponding to the index of
+the issuance phase that it believes the redemption token was received
+in.<a href="#section-5.1-3.6" class="pilcrow">¶</a>
+</li>
+<li id="section-5.1-3.7">The adversary succeeds if <code>l == l_guess</code>.<a href="#section-5.1-3.7" class="pilcrow">¶</a>
+</li>
+</ul>
+<p id="section-5.1-4">The security requirement is that the adversary has only a negligible
+probability of success greater than <code>1/Q</code>.<a href="#section-5.1-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="unforgeability">
+<section id="section-5.2">
+        <h3 id="name-one-more-unforgeability">
+<a href="#section-5.2" class="section-number selfRef">5.2. </a><a href="#name-one-more-unforgeability" class="section-name selfRef">One-more unforgeability</a>
+        </h3>
+<p id="section-5.2-1">The one-more unforgeability requirement states that it is hard for any
+adversarial client that has received <code>m</code> valid tokens from a server to
+redeem <code>m+1</code> of them. In essence, this requirement prevents a malicious
+client from being able to forge valid tokens based on the server
+responses that it sees.<a href="#section-5.2-1" class="pilcrow">¶</a></p>
+<p id="section-5.2-2">The security model takes the following form:<a href="#section-5.2-2" class="pilcrow">¶</a></p>
+<ul>
+<li id="section-5.2-3.1">A server is created that runs <code>PP_Server_Setup</code> and broadcasts the
+<code>ServerUpdate</code> message <code>update</code>.<a href="#section-5.2-3.1" class="pilcrow">¶</a>
+</li>
+<li id="section-5.2-3.2">The adversary runs <code>PP_Client_Setup</code> on <code>update</code>.<a href="#section-5.2-3.2" class="pilcrow">¶</a>
+</li>
+<li id="section-5.2-3.3">The adversary specifies a number <code>Q</code> of issuance phases to initiate
+with the server, where each phase <code>i in 1..Q</code> consists of <code>m_i</code> server
+evaluations. Let <code>m = sum(m_i)</code> where <code>i in 1..Q</code>.<a href="#section-5.2-3.3" class="pilcrow">¶</a>
+</li>
+<li id="section-5.2-3.4">The client receives Q responses, where the response with index <code>i</code>
+contains <code>m_i</code> individual tokens.<a href="#section-5.2-3.4" class="pilcrow">¶</a>
+</li>
+<li id="section-5.2-3.5">The adversary initiates <code>m_adv</code> redemption sessions with the server
+and the server verifies that the sessions are successful (return
+true), and that each request includes a unique token. The adversary
+succeeds in <code>m_succ =&lt; m_adv</code> redemption sessions.<a href="#section-5.2-3.5" class="pilcrow">¶</a>
+</li>
+<li id="section-5.2-3.6">The adversary succeeds if <code>m_succ &gt; m</code>.<a href="#section-5.2-3.6" class="pilcrow">¶</a>
+</li>
+</ul>
+<p id="section-5.2-4">The security requirement is that the adversarial client has only a
+negligible probability of succeeding.<a href="#section-5.2-4" class="pilcrow">¶</a></p>
+<p id="section-5.2-5">Note that <span>[<a href="#KLOR20" class="xref">KLOR20</a>]</span> strengthens the capabilities of the adversary, in
+comparison to the original work of <span>[<a href="#DGSTV18" class="xref">DGSTV18</a>]</span>. In <span>[<a href="#KLOR20" class="xref">KLOR20</a>]</span>, the
+adversary is provided with oracle access that allows it to verify that
+the server responses in the issuance phase are valid.<a href="#section-5.2-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="double-spend-protection-1">
+<section id="section-5.3">
+        <h3 id="name-double-spend-protection-2">
+<a href="#section-5.3" class="section-number selfRef">5.3. </a><a href="#name-double-spend-protection-2" class="section-name selfRef">Double-spend protection</a>
+        </h3>
+<p id="section-5.3-1">All issuing servers should implement a robust, global storage-query
+mechanism for checking that tokens sent by clients have not been spent
+before. Such tokens only need to be checked for each issuer
+individually. This prevents clients from "replaying" previous requests,
+and is necessary for achieving the unforgeability requirement.<a href="#section-5.3-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="voprf-protocol">
+<section id="section-6">
+      <h2 id="name-voprf-instantiation">
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-voprf-instantiation" class="section-name selfRef">VOPRF instantiation</a>
+      </h2>
+<p id="section-6-1">In this section, we show how to instantiate the functional API in
+<a href="#pp-api" class="xref">Section 3</a> with the VOPRF protocol described in <span>[<a href="#I-D.irtf-cfrg-voprf" class="xref">I-D.irtf-cfrg-voprf</a>]</span>.
+Moreover, we show that this protocol satisfies the security requirements
+laid out in <a href="#sec-requirements" class="xref">Section 5</a>, based on the security proofs provided
+in <span>[<a href="#DGSTV18" class="xref">DGSTV18</a>]</span> and <span>[<a href="#KLOR20" class="xref">KLOR20</a>]</span>.<a href="#section-6-1" class="pilcrow">¶</a></p>
+<div id="voprf-conventions">
+<section id="section-6.1">
+        <h3 id="name-voprf-conventions">
+<a href="#section-6.1" class="section-number selfRef">6.1. </a><a href="#name-voprf-conventions" class="section-name selfRef">VOPRF conventions</a>
+        </h3>
+<p id="section-6.1-1">The VOPRF ciphersuite <span>[<a href="#I-D.irtf-cfrg-voprf" class="xref">I-D.irtf-cfrg-voprf</a>]</span> that is used determines
+the member functions and prime-order group used by the protocol. We
+detail a number of specific conventions here that we use for interacting
+with the specific ciphersuite.<a href="#section-6.1-1" class="pilcrow">¶</a></p>
+<div id="ciphersuites">
+<section id="section-6.1.1">
+          <h4 id="name-ciphersuites">
+<a href="#section-6.1.1" class="section-number selfRef">6.1.1. </a><a href="#name-ciphersuites" class="section-name selfRef">Ciphersuites</a>
+          </h4>
+<p id="section-6.1.1-1">Let <code>F</code> denote a generic VOPRF API function as detailed in
+<span>[<a href="#I-D.irtf-cfrg-voprf" class="xref">I-D.irtf-cfrg-voprf</a>]</span> (Section TODO), and let <code>ciph</code> denote the
+ciphersuite that is used for instantiating the VOPRF. In this document,
+we explicitly write <code>ciph.F</code> to show that <code>F</code> is explicitly evaluated
+with respect to <code>ciph</code>.<a href="#section-6.1.1-1" class="pilcrow">¶</a></p>
+<p id="section-6.1.1-2">In addition, we define the following member functions associated with
+the ciphersuite.<a href="#section-6.1.1-2" class="pilcrow">¶</a></p>
+<ul>
+<li id="section-6.1.1-3.1">
+              <code>recover_ciphersuite_from_id(id)</code>: Takes a string identifier <code>id</code> as
+input, and outputs a VOPRF ciphersuite. Returns <code>null</code> if <code>id</code> is not
+recognized.<a href="#section-6.1.1-3.1" class="pilcrow">¶</a>
+</li>
+<li id="section-6.1.1-3.2">
+              <code>group()</code>: Returns the prime-order group associated with the
+ciphersuite.<a href="#section-6.1.1-3.2" class="pilcrow">¶</a>
+</li>
+<li id="section-6.1.1-3.3">
+              <code>H1()</code>: The function <code>H1()</code> defined in <span>[<a href="#I-D.irtf-cfrg-voprf" class="xref">I-D.irtf-cfrg-voprf</a>]</span>
+(Section TODO). This function allows deterministically mapping
+arbitrary bytes to a random element of the group. In the elliptic
+curve setting, this is achieved using the functions defined in
+<span>[<a href="#I-D.irtf-cfrg-hash-to-curve" class="xref">I-D.irtf-cfrg-hash-to-curve</a>]</span>.<a href="#section-6.1.1-3.3" class="pilcrow">¶</a>
+</li>
+</ul>
+</section>
+</div>
+<div id="prime-order-group-conventions">
+<section id="section-6.1.2">
+          <h4 id="name-prime-order-group-conventio">
+<a href="#section-6.1.2" class="section-number selfRef">6.1.2. </a><a href="#name-prime-order-group-conventio" class="section-name selfRef">Prime-order group conventions</a>
+          </h4>
+<p id="section-6.1.2-1">We detail a few functions that are required of the prime-order group
+<code>GG</code> used by the VOPRF in <span>[<a href="#I-D.irtf-cfrg-voprf" class="xref">I-D.irtf-cfrg-voprf</a>]</span>.<a href="#section-6.1.2-1" class="pilcrow">¶</a></p>
+<p id="section-6.1.2-2">Let <code>p</code> be the order of the Galois field <code>GF(p)</code> associated with the
+group <code>GG</code>. We expose the following functions associated with <code>GG</code>.<a href="#section-6.1.2-2" class="pilcrow">¶</a></p>
+<ul>
+<li id="section-6.1.2-3.1">
+              <code>GG.generator()</code>: Returns the fixed generator associated with the
+group <code>GG</code>.<a href="#section-6.1.2-3.1" class="pilcrow">¶</a>
+</li>
+<li id="section-6.1.2-3.2">
+              <code>GG.scalar_field()</code>: Provides access to the field <code>GF(p)</code>.<a href="#section-6.1.2-3.2" class="pilcrow">¶</a>
+</li>
+<li id="section-6.1.2-3.3">
+              <code>GG.scalar_field().random()</code>: Samples a scalar uniformly at random
+from GF(p). This can be done by sampling a random sequence of bytes
+that produce a scalar <code>r</code>, where <code>r &lt; p</code> is satisfied (via
+rejection-sampling).<a href="#section-6.1.2-3.3" class="pilcrow">¶</a>
+</li>
+</ul>
+<p id="section-6.1.2-4">We also use the following functions for transitioning between different
+data types.<a href="#section-6.1.2-4" class="pilcrow">¶</a></p>
+<ul>
+<li id="section-6.1.2-5.1">
+              <code>as_bytes()</code>: For a scalar element of <code>GG.scalar_field()</code>, or an
+element of <code>GG</code>; the <code>as_bytes()</code> functions serializes the element
+into bytes and returns this array as output.<a href="#section-6.1.2-5.1" class="pilcrow">¶</a>
+</li>
+<li id="section-6.1.2-5.2">
+              <code>as_scalar()</code>: Interprets a sequence of bytes as a scalar value in
+<code>GG.scalar_field()</code>. For an array of byte arrays, we define the
+function <code>as_scalars()</code> to individually deserialize each of the
+individual byte arrays into a scalar and output a new array containing
+each scalar value.<a href="#section-6.1.2-5.2" class="pilcrow">¶</a>
+</li>
+<li id="section-6.1.2-5.3">
+              <code>as_element()</code>: Interprets a sequence of bytes as a group element in
+<code>GG</code>. For an array of byte arrays, we define the function
+<code>as_elements()</code> to individually deserialize each of the individual
+byte arrays into a single group element and output a new array
+containing each of these elements.<a href="#section-6.1.2-5.3" class="pilcrow">¶</a>
+</li>
+</ul>
+</section>
+</div>
+</section>
+</div>
+<div id="voprf-api">
+<section id="section-6.2">
+        <h3 id="name-api-instantiation">
+<a href="#section-6.2" class="section-number selfRef">6.2. </a><a href="#name-api-instantiation" class="section-name selfRef">API instantiation</a>
+        </h3>
+<p id="section-6.2-1">For the explicit signatures of each of the functions, refer to
+<a href="#pp-functions" class="xref">Section 3.2</a>.<a href="#section-6.2-1" class="pilcrow">¶</a></p>
+<div id="ppserversetup-1">
+<section id="section-6.2.1">
+          <h4 id="name-pp_server_setup-2">
+<a href="#section-6.2.1" class="section-number selfRef">6.2.1. </a><a href="#name-pp_server_setup-2" class="section-name selfRef">PP_Server_Setup</a>
+          </h4>
+<div class="artwork art-text alignLeft" id="section-6.2.1-1">
+<pre>
+1. ciph = recover_ciphersuite_from_id(id)
+2. if ciph == null: panic(ERR_UNSUPPORTED_CONFIG)
+3. (k,Y,GG) = ciph.VerifiableSetup()
+4. key = k.as_bytes()
+5. pub_key = Y.as_bytes()
+6. cfg = ServerConfig {
+             id: id
+             ciphersuite: ciph,
+             key: key,
+             pub_key: pub_key,
+             max_evals: max_evals
+         }
+7. update = ServerUpdate {
+                id: id
+                ciphersuite: ciph,
+                pub_key: pub_key,
+                max_evals: max_evals
+            }
+8. Output (cfg, update)
+</pre><a href="#section-6.2.1-1" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="ppclientsetup-1">
+<section id="section-6.2.2">
+          <h4 id="name-pp_client_setup-2">
+<a href="#section-6.2.2" class="section-number selfRef">6.2.2. </a><a href="#name-pp_client_setup-2" class="section-name selfRef">PP_Client_Setup</a>
+          </h4>
+<div class="artwork art-text alignLeft" id="section-6.2.2-1">
+<pre>
+1. ciph = recover_ciphersuite_from_id(id)
+2. if ciph == null: panic(ERR_UNSUPPORTED_CONFIG)
+3. cfg = ClientConfig {
+            s: update
+         }
+4. Output cfg
+</pre><a href="#section-6.2.2-1" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="ppgenerate-1">
+<section id="section-6.2.3">
+          <h4 id="name-pp_generate-2">
+<a href="#section-6.2.3" class="section-number selfRef">6.2.3. </a><a href="#name-pp_generate-2" class="section-name selfRef">PP_Generate</a>
+          </h4>
+<div class="artwork art-text alignLeft" id="section-6.2.3-1">
+<pre>
+1. ciph = cli_cfg.s.ciphersuite
+2. GG = ciph.group()
+3. c_data = []
+4. i_data = []
+5. g_data = []
+6. for i in 0..m:
+       1. c_data[i] = GG.scalar_field().random().as_bytes()
+7. (blinds,group_elems) = ciph.VerifiableBlind(c_data)
+8. for i in 0..m:
+       1. i_data[i] = group_elems[i].as_bytes()
+       2. g_data[i] = blinds[i].as_bytes()
+9. Output ClientIssuanceInput {
+              ClientIssuanceProcessing {
+                  client_data: c_data,
+                  gen_data: g_data,
+              },
+              ClientIssuanceElement {
+                  msg_data: i_data,
+              }
+          }
+</pre><a href="#section-6.2.3-1" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="ppissue-1">
+<section id="section-6.2.4">
+          <h4 id="name-pp_issue-2">
+<a href="#section-6.2.4" class="section-number selfRef">6.2.4. </a><a href="#name-pp_issue-2" class="section-name selfRef">PP_Issue</a>
+          </h4>
+<div class="artwork art-text alignLeft" id="section-6.2.4-1">
+<pre>
+1. ciph = srv_cfg.ciphersuite
+2. pk = srv_cfg.pub_key.as_element()
+3. GG = ciph.group()
+4. m = msg_data.length
+5. if m &gt; max_evals: panic(ERR_MAX_EVALS)
+6. G = GG.generator()
+7. elts = msg_data.as_elements();
+8. Z,D = ciph.VerifiableEval(key.as_scalar(),G,pk,elts)
+9. evals = []
+10. for i in 0..m:
+    1.  eval[i] = ServerEvaluation {
+                      data: Z[i].as_bytes();
+                  }
+11. proof = ServerProof {
+                data: D.as_bytes()
+            }
+12. Output IssuanceResponse {
+                evaluations: eval,
+                proof: proof,
+            }
+</pre><a href="#section-6.2.4-1" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="ppprocess-1">
+<section id="section-6.2.5">
+          <h4 id="name-pp_process-2">
+<a href="#section-6.2.5" class="section-number selfRef">6.2.5. </a><a href="#name-pp_process-2" class="section-name selfRef">PP_Process</a>
+          </h4>
+<div class="artwork art-text alignLeft" id="section-6.2.5-1">
+<pre>
+1. ciph = cli_cfg.s.ciphersuite
+2. GG = ciph.group()
+3. G = GG.generator()
+4. pk = cli_cfg.s.pub_key.as_element()
+5. M = i_data.as_elements()
+6. Z = evals.as_elements()
+7. r = g_data.as_scalars()
+8. N = ciph.VerifiableUnblind(G,pk,M,Z,r,proof)
+9. if N == "error": panic(ERR_PROOF_VALIDATION)
+10. tokens = []
+11. for i in 0..m:
+        1. issued = N[i].as_bytes()
+        2. rt = RedemptionToken { data: c_data[i], issued: issued }
+        3. tokens[i] = rt
+12. Output tokens
+</pre><a href="#section-6.2.5-1" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="ppredeem-1">
+<section id="section-6.2.6">
+          <h4 id="name-pp_redeem-2">
+<a href="#section-6.2.6" class="section-number selfRef">6.2.6. </a><a href="#name-pp_redeem-2" class="section-name selfRef">PP_Redeem</a>
+          </h4>
+<div class="artwork art-text alignLeft" id="section-6.2.6-1">
+<pre>
+1. ciph = cli_cfg.s.ciphersuite
+2. GG = ciph.group()
+3. token = store[S.id].pop();
+4. data = token.data
+5. issued = token.issued.as_element();
+6. tag = ciph.VerifiableFinalize(data,issued,aux)
+7. Output RedemptionMessage {
+              data: data,
+              tag: tag,
+              aux: aux,
+          }
+</pre><a href="#section-6.2.6-1" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="ppverify-1">
+<section id="section-6.2.7">
+          <h4 id="name-pp_verify-2">
+<a href="#section-6.2.7" class="section-number selfRef">6.2.7. </a><a href="#name-pp_verify-2" class="section-name selfRef">PP_Verify</a>
+          </h4>
+<div class="artwork art-text alignLeft" id="section-6.2.7-1">
+<pre>
+1. ciph = srv_cfg.ciphersuite
+2. GG = ciph.group()
+3. key = srv_cfg.key
+4. T = ciph.H1(msg.data)
+5. N' = ciph.Eval(key,T)
+6. tag' = ciph.Finalize(msg.data,N',msg.aux)
+7. Output RedemptionResponse {
+              success: (msg.tag == tag')
+          }
+</pre><a href="#section-6.2.7-1" class="pilcrow">¶</a>
+</div>
+<p id="section-6.2.7-2">Note: at this stage we use the non-verifiable VOPRF API functions rather
+than the verifiable equivalents (<code>Eval</code> rather than <code>VerifiableEval</code>),
+as we do not need to recompute the proof data that is used for producing
+verifiable outputs at this stage.<a href="#section-6.2.7-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="security-justification">
+<section id="section-6.3">
+        <h3 id="name-security-justification">
+<a href="#section-6.3" class="section-number selfRef">6.3. </a><a href="#name-security-justification" class="section-name selfRef">Security justification</a>
+        </h3>
+<p id="section-6.3-1">The protocol that we devise in <a href="#overview" class="xref">Section 4</a>, coupled with the API
+instantiation in <a href="#voprf-api" class="xref">Section 6.2</a>, are equivalent to the protocol
+description in <span>[<a href="#DGSTV18" class="xref">DGSTV18</a>]</span>. In <span>[<a href="#DGSTV18" class="xref">DGSTV18</a>]</span>, it is proven that this
+protocol satisfies the security requirements of unlinkability
+(<a href="#unlinkability" class="xref">Section 5.1</a>) and unforgeability (<a href="#unforgeability" class="xref">Section 5.2</a>).<a href="#section-6.3-1" class="pilcrow">¶</a></p>
+<p id="section-6.3-2">The unlinkability property follows unconditionally as the view of the
+adversary in the redemption phase is distributed independently of the
+issuance phase. The unforgeability property follows from the one-more
+decryption security of the ElGamal cryptosystem <span>[<a href="#DGSTV18" class="xref">DGSTV18</a>]</span>. In
+<span>[<a href="#KLOR20" class="xref">KLOR20</a>]</span> it is also proven that this protocol satisfies the stronger
+notion of unforgeability, where the adversary is granted a verification
+oracle, under the chosen-target Diffie-Hellman assumption.<a href="#section-6.3-2" class="pilcrow">¶</a></p>
+<p id="section-6.3-3">Note that the existing security proofs do not leverage the VOPRF
+primitive as a black-box in the security reductions. Instead it relies
+on the underlying operations in a non-black-box manner. Hence, an
+explicit reduction from the generic VOPRF primitive to the Privacy Pass
+protocol would strengthen these security guarantees.<a href="#section-6.3-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="pp-ciphersuites">
+<section id="section-7">
+      <h2 id="name-ciphersuites-2">
+<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-ciphersuites-2" class="section-name selfRef">Ciphersuites</a>
+      </h2>
+<p id="section-7-1">The Privacy Pass protocol essentially operates as a wrapper around the
+instantiation of the VOPRF that is used in <a href="#voprf-protocol" class="xref">Section 6</a>. There is
+no extra cryptographic machinery used on top of what is established in
+the VOPRF protocol. Therefore, the ciphersuites that we support are the
+transitively exposed from the underlying VOPRF functionality, we detail
+these below. Each of the ciphersuites is detailed in
+<span>[<a href="#I-D.irtf-cfrg-voprf" class="xref">I-D.irtf-cfrg-voprf</a>]</span>.<a href="#section-7-1" class="pilcrow">¶</a></p>
+<ul>
+<li id="section-7-2.1">
+          <p id="section-7-2.1.1">VOPRF-P384-HKDF-SHA512-SSWU-RO<a href="#section-7-2.1.1" class="pilcrow">¶</a></p>
+<ul>
+<li id="section-7-2.1.2.1">maximum security parameter: 192 bits<a href="#section-7-2.1.2.1" class="pilcrow">¶</a>
+</li>
+</ul>
+</li>
+<li id="section-7-2.2">
+          <p id="section-7-2.2.1">VOPRF-curve448-HKDF-SHA512-ELL2-RO<a href="#section-7-2.2.1" class="pilcrow">¶</a></p>
+<ul>
+<li id="section-7-2.2.2.1">maximum security parameter: 224 bits<a href="#section-7-2.2.2.1" class="pilcrow">¶</a>
+</li>
+</ul>
+</li>
+<li id="section-7-2.3">
+          <p id="section-7-2.3.1">VOPRF-P521-HKDF-SHA512-SSWU-RO<a href="#section-7-2.3.1" class="pilcrow">¶</a></p>
+<ul>
+<li id="section-7-2.3.2.1">maximum security parameter: 256 bits<a href="#section-7-2.3.2.1" class="pilcrow">¶</a>
+</li>
+</ul>
+</li>
+</ul>
+<p id="section-7-3">When referring to the 'maximum security parameter' size above, we are
+referring to the <em>maximum</em> effective key length of the ciphersuite, as
+specified in <span>[<a href="#NIST" class="xref">NIST</a>]</span>. The reason that this is the maximum length is
+because there may be attacks that serve to lower the actual value of the
+security parameter. See <span>[<a href="#I-D.irtf-cfrg-voprf" class="xref">I-D.irtf-cfrg-voprf</a>]</span> for more details.<a href="#section-7-3" class="pilcrow">¶</a></p>
+<p id="section-7-4">Note than any extension to the Privacy Pass protocol that modifies
+either VOPRF instantiation, or the way that the Privacy Pass API is
+implemented, MUST specify its own ciphersuites.<a href="#section-7-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="extensions">
+<section id="section-8">
+      <h2 id="name-extensions-framework-policy">
+<a href="#section-8" class="section-number selfRef">8. </a><a href="#name-extensions-framework-policy" class="section-name selfRef">Extensions framework policy</a>
+      </h2>
+<p id="section-8-1">The intention with providing the Privacy Pass API in <a href="#pp-api" class="xref">Section 3</a> is to
+allow new instantiations of the Privacy Pass protocol. These
+instantiations may provide either modified VOPRF constructions, or
+simply implement the API in a completely different way.<a href="#section-8-1" class="pilcrow">¶</a></p>
+<p id="section-8-2">Extensions to this initial draft SHOULD be specified as separate
+documents taking one of two possible routes:<a href="#section-8-2" class="pilcrow">¶</a></p>
+<ul>
+<li id="section-8-3.1">Produce new VOPRF-like primitives that use the same public API
+provided in <span>[<a href="#I-D.irtf-cfrg-voprf" class="xref">I-D.irtf-cfrg-voprf</a>]</span> to implement the Privacy Pass API,
+but with different internal operations.<a href="#section-8-3.1" class="pilcrow">¶</a>
+</li>
+<li id="section-8-3.2">Implement the Privacy Pass API in a different way to the proposed
+implementation in <a href="#voprf-protocol" class="xref">Section 6</a>.<a href="#section-8-3.2" class="pilcrow">¶</a>
+</li>
+</ul>
+<p id="section-8-4">If an extension requires changing the generic protocol description as
+described in <a href="#overview" class="xref">Section 4</a>, then the change may have to result in changes
+to the draft specification here also.<a href="#section-8-4" class="pilcrow">¶</a></p>
+<p id="section-8-5">Each new extension that modifies the internals of the protocol in either
+of the two ways MUST re-justify that the extended protocol
+still satisfies the security requirements in <a href="#sec-requirements" class="xref">Section 5</a>.
+Protocol extensions MAY put forward new security guarantees if they
+are applicable.<a href="#section-8-5" class="pilcrow">¶</a></p>
+<p id="section-8-6">The extensions MUST also conform with the extension framework policy as
+set out in the architectural framework document. For example, this may
+concern any potential impact on client privacy that the extension may
+introduce.<a href="#section-8-6" class="pilcrow">¶</a></p>
+</section>
+</div>
+<section id="section-9">
+      <h2 id="name-references">
+<a href="#section-9" class="section-number selfRef">9. </a><a href="#name-references" class="section-name selfRef">References</a>
+      </h2>
+<section id="section-9.1">
+        <h3 id="name-normative-references">
+<a href="#section-9.1" class="section-number selfRef">9.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+        </h3>
+<dl class="references">
+<dt id="draft-davidson-pp-architecture">[draft-davidson-pp-architecture]</dt>
+<dd>
+<span class="refAuthor">Davidson, A.</span>, <span class="refTitle">"Privacy Pass: Architectural Framework"</span>, <time datetime="n.d.">n.d.</time>, <span>&lt;<a href="https://github.com/alxdavids/privacy-pass-ietf/tree/master/drafts/draft-davidson-pp-architecture">https://github.com/alxdavids/privacy-pass-ietf/tree/master/drafts/draft-davidson-pp-architecture</a>&gt;</span>. </dd>
+<dt id="I-D.irtf-cfrg-hash-to-curve">[I-D.irtf-cfrg-hash-to-curve]</dt>
+<dd>
+<span class="refAuthor">Faz-Hernandez, A.</span><span class="refAuthor">, Scott, S.</span><span class="refAuthor">, Sullivan, N.</span><span class="refAuthor">, Wahby, R.</span><span class="refAuthor">, and C. Wood</span>, <span class="refTitle">"Hashing to Elliptic Curves"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-irtf-cfrg-hash-to-curve-06</span>, <time datetime="2020-03-09">9 March 2020</time>, <span>&lt;<a href="http://www.ietf.org/internet-drafts/draft-irtf-cfrg-hash-to-curve-06.txt">http://www.ietf.org/internet-drafts/draft-irtf-cfrg-hash-to-curve-06.txt</a>&gt;</span>. </dd>
+<dt id="I-D.irtf-cfrg-voprf">[I-D.irtf-cfrg-voprf]</dt>
+<dd>
+<span class="refAuthor">Davidson, A.</span><span class="refAuthor">, Sullivan, N.</span><span class="refAuthor">, and C. Wood</span>, <span class="refTitle">"Oblivious Pseudorandom Functions (OPRFs) using Prime-Order Groups"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-irtf-cfrg-voprf-03</span>, <time datetime="2020-03-09">9 March 2020</time>, <span>&lt;<a href="http://www.ietf.org/internet-drafts/draft-irtf-cfrg-voprf-03.txt">http://www.ietf.org/internet-drafts/draft-irtf-cfrg-voprf-03.txt</a>&gt;</span>. </dd>
+<dt id="NIST">[NIST]</dt>
+<dd>
+<span class="refTitle">"Keylength - NIST Report on Cryptographic Key Length and Cryptoperiod (2016)"</span>, <time datetime="n.d.">n.d.</time>, <span>&lt;<a href="https://www.keylength.com/en/4/">https://www.keylength.com/en/4/</a>&gt;</span>. </dd>
+<dt id="RFC2119">[RFC2119]</dt>
+<dd>
+<span class="refAuthor">Bradner, S.</span>, <span class="refTitle">"Key words for use in RFCs to Indicate Requirement Levels"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 2119</span>, <span class="seriesInfo">DOI 10.17487/RFC2119</span>, <time datetime="1997-03">March 1997</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2119">https://www.rfc-editor.org/info/rfc2119</a>&gt;</span>. </dd>
+<dt id="RFC8446">[RFC8446]</dt>
+<dd>
+<span class="refAuthor">Rescorla, E.</span>, <span class="refTitle">"The Transport Layer Security (TLS) Protocol Version 1.3"</span>, <span class="seriesInfo">RFC 8446</span>, <span class="seriesInfo">DOI 10.17487/RFC8446</span>, <time datetime="2018-08">August 2018</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8446">https://www.rfc-editor.org/info/rfc8446</a>&gt;</span>. </dd>
+</dl>
+</section>
+<section id="section-9.2">
+        <h3 id="name-informative-references">
+<a href="#section-9.2" class="section-number selfRef">9.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
+        </h3>
+<dl class="references">
+<dt id="DGSTV18">[DGSTV18]</dt>
+<dd>
+<span class="refTitle">"Privacy Pass, Bypassing Internet Challenges Anonymously"</span>, <time datetime="n.d.">n.d.</time>, <span>&lt;<a href="https://petsymposium.org/2018/files/papers/issue3/popets-2018-0026.pdf">https://petsymposium.org/2018/files/papers/issue3/popets-2018-0026.pdf</a>&gt;</span>. </dd>
+<dt id="KLOR20">[KLOR20]</dt>
+<dd>
+<span class="refTitle">"Anonymous Tokens with Private Metadata Bit"</span>, <time datetime="n.d.">n.d.</time>, <span>&lt;<a href="https://eprint.iacr.org/2020/072">https://eprint.iacr.org/2020/072</a>&gt;</span>. </dd>
+<dt id="OpenPrivacy">[OpenPrivacy]</dt>
+<dd>
+<span class="refTitle">"Token Based Services - Differences from PrivacyPass"</span>, <time datetime="n.d.">n.d.</time>, <span>&lt;<a href="https://openprivacy.ca/assets/towards-anonymous-prepaid-services.pdf">https://openprivacy.ca/assets/towards-anonymous-prepaid-services.pdf</a>&gt;</span>. </dd>
+<dt id="PPEXT">[PPEXT]</dt>
+<dd>
+<span class="refTitle">"Privacy Pass Browser Extension"</span>, <time datetime="n.d.">n.d.</time>, <span>&lt;<a href="https://github.com/privacypass/challenge-bypass-extension">https://github.com/privacypass/challenge-bypass-extension</a>&gt;</span>. </dd>
+<dt id="PPSRV">[PPSRV]</dt>
+<dd>
+<span class="refAuthor">Sullivan, N.</span>, <span class="refTitle">"Cloudflare Supports Privacy Pass"</span>, <time datetime="n.d.">n.d.</time>, <span>&lt;<a href="https://blog.cloudflare.com/cloudflare-supports-privacy-pass/">https://blog.cloudflare.com/cloudflare-supports-privacy-pass/</a>&gt;</span>. </dd>
+<dt id="PrivateStorage">[PrivateStorage]</dt>
+<dd>
+<span class="refAuthor">Steininger, L.</span>, <span class="refTitle">"The Path from S4 to PrivateStorage"</span>, <time datetime="n.d.">n.d.</time>, <span>&lt;<a href="https://medium.com/least-authority/the-path-from-s4-to-privatestorage-ae9d4a10b2ae">https://medium.com/least-authority/the-path-from-s4-to-privatestorage-ae9d4a10b2ae</a>&gt;</span>. </dd>
+<dt id="RFC7049">[RFC7049]</dt>
+<dd>
+<span class="refAuthor">Bormann, C.</span><span class="refAuthor"> and P. Hoffman</span>, <span class="refTitle">"Concise Binary Object Representation (CBOR)"</span>, <span class="seriesInfo">RFC 7049</span>, <span class="seriesInfo">DOI 10.17487/RFC7049</span>, <time datetime="2013-10">October 2013</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7049">https://www.rfc-editor.org/info/rfc7049</a>&gt;</span>. </dd>
+<dt id="RFC7159">[RFC7159]</dt>
+<dd>
+<span class="refAuthor">Bray, T., Ed.</span>, <span class="refTitle">"The JavaScript Object Notation (JSON) Data Interchange Format"</span>, <span class="seriesInfo">RFC 7159</span>, <span class="seriesInfo">DOI 10.17487/RFC7159</span>, <time datetime="2014-03">March 2014</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7159">https://www.rfc-editor.org/info/rfc7159</a>&gt;</span>. </dd>
+<dt id="TRUST">[TRUST]</dt>
+<dd>
+<span class="refAuthor">WICG, .</span>, <span class="refTitle">"Trust Token API"</span>, <time datetime="n.d.">n.d.</time>, <span>&lt;<a href="https://github.com/WICG/trust-token-api">https://github.com/WICG/trust-token-api</a>&gt;</span>. </dd>
+</dl>
+</section>
+</section>
+<div id="authors-addresses">
+<section id="section-appendix.a">
+      <h2 id="name-authors-address">
+<a href="#name-authors-address" class="section-name selfRef">Author's Address</a>
+      </h2>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Alex Davidson</span></div>
+<div dir="auto" class="left"><span class="org">Cloudflare Portugal</span></div>
+<div dir="auto" class="left"><span class="street-address">Largo Rafael Bordalo Pinheiro 29</span></div>
+<div dir="auto" class="left"><span class="locality">Lisbon</span></div>
+<div dir="auto" class="left"><span class="country-name">Portugal</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:alex.davidson92@gmail.com" class="email">alex.davidson92@gmail.com</a>
+</div>
+</address>
+</section>
+</div>
+<script>var toc = document.getElementById("toc");
+var tocToggle = toc.querySelector("h2");
+var tocNav = toc.querySelector("nav");
+
+// mobile menu toggle
+tocToggle.onclick = function(event) {
+    if (window.innerWidth < 1024) {
+ var tocNavDisplay = tocNav.currentStyle ? tocNav.currentStyle.display : getComputedStyle(tocNav, null).display;
+ if (tocNavDisplay == "none") {
+     tocNav.style.display = "block";
+ } else {
+     tocNav.style.display = "none";
+ }
+    }
+}
+
+// toc anchor scroll to anchor
+tocNav.addEventListener("click", function (event) {
+    event.preventDefault();
+    if (event.target.nodeName == 'A') {
+ if (window.innerWidth < 1024) {
+     tocNav.style.display = "none";
+ }
+ var href = event.target.getAttribute("href");
+ var anchorId = href.substr(1);
+ var anchor =  document.getElementById(anchorId);
+ anchor.scrollIntoView(true);
+ window.history.pushState("","",href);
+    }
+});
+
+// switch toc mode when window resized
+window.onresize = function () {
+    if (window.innerWidth < 1024) {
+ tocNav.style.display = "none";
+    } else {
+ tocNav.style.display = "block";
+    }
+}
+</script>
+</body>
+</html>
